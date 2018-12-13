@@ -39,6 +39,7 @@ NOTES:
 #include <stdbool.h>
 #include <string.h>
 #include <sam.h>
+#include "clock.h"
 #include "usb.h"
 #include "nvm_data.h"
 #include "usb_descriptors.h"
@@ -46,6 +47,10 @@ NOTES:
 /*- Definitions -------------------------------------------------------------*/
 #define USB_CMD(dir, rcpt, type) ((USB_##dir##_TRANSFER << 7) | (USB_##type##_REQUEST << 5) | (USB_##rcpt##_RECIPIENT << 0))
 #define SIMPLE_USB_CMD(rcpt, type) ((USB_##type##_REQUEST << 5) | (USB_##rcpt##_RECIPIENT << 0))
+#define GCLK_SYSTEM 0
+#define FLASH_BOOT_SIZE 4096
+#define FLASH_FW_ADDR   FLASH_BOOT_SIZE
+
 
 /*- Types -------------------------------------------------------------------*/
 typedef struct {
@@ -63,6 +68,18 @@ static uint32_t dfu_status_choices[4] = {
 static udc_mem_t udc_mem[USB_EPT_NUM];
 static uint32_t udc_ctrl_in_buf[16];
 static uint32_t udc_ctrl_out_buf[16];
+
+__attribute__((section(".version")))
+__attribute__((used))
+const struct {
+  uint16_t version;
+  char git_short_tag[8];
+  char datetime[32];
+} version_data = {
+  .version = DFU_VERSION,
+  .git_short_tag = GIT_SHORT_TAG,
+  .datetime = __DATE__ " " __TIME__
+};
 
 /*- Implementations ---------------------------------------------------------*/
 
@@ -176,6 +193,7 @@ static void USB_Service(void)
               case USB_STRING_DESCRIPTOR:
                 switch (index) {
                   case USB_STRING_LANG:
+                    udc_control_send((uint32_t*)&usb_string_lang, usb_string_lang.bLength);
                     break;
                   case USB_STRING_MANU:
                   case USB_STRING_PRODUCT:
@@ -183,6 +201,9 @@ static void USB_Service(void)
                     break;
                   case USB_STRING_SERIAL:
                     udc_control_send((uint32_t*)&usb_string_serial, usb_string_serial.bLength);
+                    break;
+                  case USB_STRING_DFU_FLASH:
+                    udc_control_send((uint32_t*)&usb_string_dfu_flash, usb_string_dfu_flash.bLength);
                     break;
                   case USB_STRING_F0:
                     udc_control_send((uint32_t*)&usb_string_empty, usb_string_empty.bLength);
@@ -232,7 +253,7 @@ static void USB_Service(void)
             dfu_status = dfu_status_choices + 0;
             if (request->wLength) {
               dfu_status = dfu_status_choices + 2;
-              dfu_addr = 0x400 + request->wValue * 64;
+              dfu_addr = FLASH_FW_ADDR + request->wValue * 64;
             }
           /* fall through to below */
           case DFU_UPLOAD:
@@ -247,88 +268,62 @@ static void USB_Service(void)
             break;
         }
         break;
-      default:
-        udc_control_send_zlp();
-        break;
     }
   }
 }
 
-#if 0
-extern int __RAM_segment_used_end__;
-#define DBL_TAP_PTR (uint32_t *)(&__RAM_segment_used_end__)
-#define DBL_TAP_MAGIC 0xf02669ef
-#endif
+static bool flash_valid()
+{
+  unsigned sp = ((unsigned*)FLASH_FW_ADDR)[0];
+  unsigned ip = ((unsigned*)FLASH_FW_ADDR)[1];
+
+  return     sp > 0x20000000
+             && ip >= 0x00001000
+             && ip <  0x00400000;
+}
+
+
+static bool wdt_reset_entry_condition(void)
+{
+  // Was reset caused by watchdog timer (WDT)?
+  // but RTC not running
+  return ((PM->RCAUSE.reg & PM_RCAUSE_WDT) && !(RTC->MODE1.CTRL.reg & RTC_MODE0_CTRL_ENABLE));
+}
+
+static bool button_pressed(void)
+{
+  return false;
+}
+
+inline static void jump_to_flash(uint32_t addr_p, uint32_t r0_val) {
+  uint32_t *addr = (void*) addr_p;
+  __disable_irq();
+
+  // Disable SysTick
+  SysTick->CTRL = 0;
+
+  // TODO: reset peripherals
+
+  // Switch to the the interrupt vector table in flash
+  SCB->VTOR = (uint32_t) addr;
+
+  // Set up the stack and jump to the reset vector
+  uint32_t sp = addr[0];
+  uint32_t pc = addr[1];
+  register uint32_t r0 __asm__ ("r0") = r0_val;
+  __asm__ volatile("mov sp, %0; bx %1" :: "r" (sp), "r" (pc), "r" (r0));
+  (void) r0_val;
+}
 
 void bootloader(void)
 {
-#ifndef DBL_TAP_MAGIC
-  /* configure PA15 (bootloader entry pin used by SAM-BA) as input pull-up */
-  PORT->Group[0].PINCFG[15].reg = PORT_PINCFG_PULLEN | PORT_PINCFG_INEN;
-  PORT->Group[0].OUTSET.reg = (1UL << 15);
-#endif
-
-  PAC1->WPCLR.reg = 2; /* clear DSU */
-
-  DSU->ADDR.reg = 0x400; /* start CRC check at beginning of user app */
-  DSU->LENGTH.reg = *(volatile uint32_t*)0x410;  /* use length encoded into unused vector address in user app */
-
-  /* ask DSU to compute CRC */
-  DSU->DATA.reg = 0xFFFFFFFF;
-  DSU->CTRL.bit.CRC = 1;
-  while (!DSU->STATUSA.bit.DONE);
-
-  if (DSU->DATA.reg)
-  { goto run_bootloader; } /* CRC failed, so run bootloader */
-
-#ifndef DBL_TAP_MAGIC
-  if (!(PORT->Group[0].IN.reg & (1UL << 15)))
-  { goto run_bootloader; } /* pin grounded, so run bootloader */
-
-  return; /* we've checked everything and there is no reason to run the bootloader */
-#else
-  if (PM->RCAUSE.reg & PM_RCAUSE_POR)
-  { *DBL_TAP_PTR = 0; } /* a power up event should never be considered a 'double tap' */
-
-  if (*DBL_TAP_PTR == DBL_TAP_MAGIC) {
-    /* a 'double tap' has happened, so run bootloader */
-    *DBL_TAP_PTR = 0;
+  if (!flash_valid() || button_pressed() || wdt_reset_entry_condition()) {
     goto run_bootloader;
   }
-
-  /* postpone boot for a short period of time; if a second reset happens during this window, the "magic" value will remain */
-  *DBL_TAP_PTR = DBL_TAP_MAGIC;
-  volatile int wait = 65536;
-  while (wait--);
-  /* however, if execution reaches this point, the window of opportunity has closed and the "magic" disappears  */
-  *DBL_TAP_PTR = 0;
-  return;
-#endif
+  jump_to_flash(FLASH_FW_ADDR, 0);
 
 run_bootloader:
-  /*
-  configure oscillator for crystal-free USB operation
-  */
-
-  SYSCTRL->OSC8M.bit.PRESC = 0;
-
-  SYSCTRL->INTFLAG.reg = SYSCTRL_INTFLAG_BOD33RDY | SYSCTRL_INTFLAG_BOD33DET | SYSCTRL_INTFLAG_DFLLRDY;
-
-  NVMCTRL->CTRLB.reg = NVMCTRL_CTRLB_RWS_DUAL;
-
-  SYSCTRL->DFLLCTRL.reg = 0; // See Errata 9905
-  while (!SYSCTRL->PCLKSR.bit.DFLLRDY);
-
-  SYSCTRL->DFLLMUL.reg = SYSCTRL_DFLLMUL_MUL(48000);
-  SYSCTRL->DFLLVAL.reg = SYSCTRL_DFLLVAL_COARSE(NVM_READ_CAL(NVM_DFLL48M_COARSE_CAL)) | SYSCTRL_DFLLVAL_FINE(NVM_READ_CAL(NVM_DFLL48M_FINE_CAL));
-
-  SYSCTRL->DFLLCTRL.reg = SYSCTRL_DFLLCTRL_ENABLE | SYSCTRL_DFLLCTRL_USBCRM | SYSCTRL_DFLLCTRL_MODE | SYSCTRL_DFLLCTRL_BPLCKC | SYSCTRL_DFLLCTRL_CCDIS | SYSCTRL_DFLLCTRL_STABLE;
-
-  while (!SYSCTRL->PCLKSR.bit.DFLLRDY);
-
-  GCLK->GENCTRL.reg = GCLK_GENCTRL_ID(0) | GCLK_GENCTRL_SRC(GCLK_SOURCE_DFLL48M) | GCLK_GENCTRL_RUNSTDBY | GCLK_GENCTRL_GENEN;
-  while (GCLK->STATUS.bit.SYNCBUSY);
-
+  clock_init_crystal(GCLK_SYSTEM, 1);
   /*
   initialize USB
   */

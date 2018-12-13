@@ -31,7 +31,7 @@
 #include "usb.h"
 #include "usb_descriptors.h"
 
-#define DFU_TRANSFER_SIZE 256
+#define DFU_TRANSFER_SIZE 64
 
 /*- Variables ---------------------------------------------------------------*/
 usb_device_descriptor_t usb_device_descriptor __attribute__((aligned(4))) =   /* MUST BE IN RAM for USB peripheral */
@@ -39,21 +39,27 @@ usb_device_descriptor_t usb_device_descriptor __attribute__((aligned(4))) =   /*
   .bLength            = sizeof(usb_device_descriptor_t),
   .bDescriptorType    = USB_DEVICE_DESCRIPTOR,
 
-  .bcdUSB                 = 0x0200, // 0x0100, DAFU has 0x0200
+  .bcdUSB                 = 0x0200,
   .bDeviceClass           = 0,
-  .bDeviceSubClass        = 1, /* 1 = DFU */ //DAFU has a zero here
+  .bDeviceSubClass        = 0, /* DFU */
   .bDeviceProtocol        = 0,
 
   .bMaxPacketSize0        = 64,
   .idVendor               = 0x1209,
-  .idProduct              = 0x7551,
-  .bcdDevice              = 0x0004,
+  .idProduct              = 0x2003,
+  .bcdDevice              = 0x0005,
 
   .iManufacturer          = USB_STRING_MANU,
   .iProduct               = USB_STRING_PRODUCT,
   .iSerialNumber          = USB_STRING_SERIAL,
 
   .bNumConfigurations     = 1
+};
+
+usb_string_descriptor usb_string_lang __attribute__((aligned(4))) = {
+  .bLength = 4,
+  .bDescriptorType = USB_STRING_DESCRIPTOR,
+  .bString = {USB_LANGUAGE_EN_US},
 };
 
 usb_string_descriptor usb_string_manu __attribute__((aligned(4))) = {
@@ -72,6 +78,12 @@ usb_string_descriptor usb_string_empty __attribute__((aligned(4))) = {
   .bLength = 4,
   .bDescriptorType = USB_STRING_DESCRIPTOR,
   .bString = {0, 0},
+};
+
+usb_string_descriptor usb_string_dfu_flash __attribute__((aligned(4))) = {
+  .bLength = 12,
+  .bDescriptorType = USB_STRING_DESCRIPTOR,
+  .bString = {'F', 0, 'L', 0, 'A', 0, 'S', 0, 'H', 0},
 };
 
 usb_string_descriptor usb_string_msftos __attribute__((aligned(4))) = {
@@ -121,14 +133,14 @@ usb_configuration_hierarchy_t usb_configuration_hierarchy __attribute__((aligned
     .bInterfaceClass     = DFU_INTERFACE_CLASS,
     .bInterfaceSubClass  = DFU_INTERFACE_SUBCLASS,
     .bInterfaceProtocol  = DFU_INTERFACE_PROTOCOL,
-    .iInterface          = USB_STR_ZERO,
+    .iInterface          = USB_STRING_DFU_FLASH,
   },
 
   .dfu =
   {
     .bLength             = sizeof(usb_dfu_descriptor_t),
     .bDescriptorType     = DFU_DESCRIPTOR_TYPE,
-    .bmAttributes        = DFU_ATTR_CAN_DOWNLOAD | DFU_ATTR_WILL_DETACH,
+    .bmAttributes        = DFU_ATTR_CAN_DOWNLOAD | DFU_ATTR_CAN_UPLOAD,
     .wDetachTimeout      = 0,
     .wTransferSize       = DFU_TRANSFER_SIZE,
     .bcdDFU              = 0x101,

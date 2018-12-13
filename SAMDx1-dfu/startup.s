@@ -28,6 +28,7 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
+  #include "config.h" 
   .syntax unified
 
   .global Reset_Handler
@@ -71,17 +72,6 @@ zero_loop:
   bcc zero_loop
 
   bl bootloader
-
-  /* if bootloader returns, we proceed to the user app */
-
-  ldr r1, =0x400 /* origin of user app */
-  ldr r0, =0xE000ED08 /* VTOR register */
-  str r1, [r0] /* point VTOR to user app */
-  ldr r0, [r1] /* load stack pointer from user app */
-  msr msp, r0
-  msr psp, r0
-  ldr r0, [r1, #4] /* load reset address from user app */
-  mov pc, r0
 
 loop:
   b .

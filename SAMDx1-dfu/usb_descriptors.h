@@ -64,6 +64,8 @@ extern usb_string_descriptor usb_string_manu;
 extern usb_string_descriptor usb_string_msftos;
 extern usb_string_descriptor usb_string_empty;
 extern usb_string_descriptor usb_string_serial;
+extern usb_string_descriptor usb_string_dfu_flash;
+extern usb_string_descriptor usb_string_lang;
 extern USB_MicrosoftCompatibleDescriptor msft_compatible;
 
 #endif // _USB_DESCRIPTORS_H_
