@@ -1,6 +1,7 @@
 /*
  * 1kByte USB DFU bootloader for Atmel SAMD11 microcontrollers
  *
+ * Copyright (c) 2019, Carsten Presser
  * Copyright (c) 2018, Peter Lawrence
  * Copyright (c) 2016, Alex Taradov <alex@taradov.com>
  * All rights reserved.
@@ -43,6 +44,7 @@ NOTES:
 #include "usb.h"
 #include "nvm_data.h"
 #include "usb_descriptors.h"
+#include "peripherals.h"
 
 /*- Definitions -------------------------------------------------------------*/
 #define USB_CMD(dir, rcpt, type) ((USB_##dir##_TRANSFER << 7) | (USB_##type##_REQUEST << 5) | (USB_##rcpt##_RECIPIENT << 0))
@@ -50,6 +52,7 @@ NOTES:
 #define GCLK_SYSTEM 0
 #define FLASH_BOOT_SIZE 4096
 #define FLASH_FW_ADDR   FLASH_BOOT_SIZE
+#define LED_BLINK_CYCLES 40000UL
 
 
 /*- Types -------------------------------------------------------------------*/
@@ -59,10 +62,12 @@ typedef struct {
 } udc_mem_t;
 
 /*- Variables ---------------------------------------------------------------*/
+static uint32_t dfu_done = 0;
 static uint32_t usb_config = 0;
-static uint32_t dfu_status_choices[4] = {
+static uint32_t dfu_status_choices[6] = {
   0x00000000, 0x00000002, /* normal */
   0x00000000, 0x00000005, /* dl */
+  0x00000000, 0x00000006, /* manifest sync */
 };
 
 static udc_mem_t udc_mem[USB_EPT_NUM];
@@ -128,7 +133,7 @@ static void USB_Service(void)
     USB->DEVICE.DeviceEndpoint[0].EPSTATUSCLR.bit.BK0RDY = 1;
   }
 
-  // Handle incoming DFU data packets on
+  // Handle incoming DFU data packets, write to Flash
   if (USB->DEVICE.DeviceEndpoint[0].EPINTFLAG.bit.TRCPT0) {
     if (dfu_addr) {
       if (0 == ((dfu_addr >> 6) & 0x3)) {
@@ -254,17 +259,22 @@ static void USB_Service(void)
             if (request->wLength) {
               dfu_status = dfu_status_choices + 2;
               dfu_addr = FLASH_FW_ADDR + request->wValue * 64;
+            } else {
+              // zero length packet, end of download
+              dfu_status = dfu_status_choices + 4;
+              dfu_addr = 0;
+              dfu_done = 1;
             }
-          /* fall through to below */
+          // fall through to below
           case DFU_UPLOAD:
           case DFU_ABORT:
-          case DFU_DETACH:
           case DFU_CLRSTATUS:
-          default: // DFU_UPLOAD & others
-            // DFU_DN
-            /* 0x00 == DFU_DETACH, 0x04 == DFU_CLRSTATUS, 0x06 == DFU_ABORT, and 0x01 == DFU_DNLOAD and 0x02 == DFU_UPLOAD */
-            if (!dfu_addr)
-            { udc_control_send_zlp(); }
+          case DFU_DETACH:
+          default:
+            /* 0x04 == DFU_CLRSTATUS, 0x06 == DFU_ABORT, and 0x01 == DFU_DNLOAD and 0x02 == DFU_UPLOAD */
+            if (!dfu_addr) {
+              udc_control_send_zlp();
+            }
             break;
         }
         break;
@@ -277,6 +287,8 @@ static bool flash_valid()
   unsigned sp = ((unsigned*)FLASH_FW_ADDR)[0];
   unsigned ip = ((unsigned*)FLASH_FW_ADDR)[1];
 
+  // sp needs to point somewhere inside the RAM
+  // ip needs to point into the flash
   return     sp > 0x20000000
              && ip >= 0x00001000
              && ip <  0x00400000;
@@ -292,27 +304,7 @@ static bool wdt_reset_entry_condition(void)
 
 static bool button_pressed(void)
 {
-  return false;
-}
-
-inline static void jump_to_flash(uint32_t addr_p, uint32_t r0_val) {
-  uint32_t *addr = (void*) addr_p;
-  __disable_irq();
-
-  // Disable SysTick
-  SysTick->CTRL = 0;
-
-  // TODO: reset peripherals
-
-  // Switch to the the interrupt vector table in flash
-  SCB->VTOR = (uint32_t) addr;
-
-  // Set up the stack and jump to the reset vector
-  uint32_t sp = addr[0];
-  uint32_t pc = addr[1];
-  register uint32_t r0 __asm__ ("r0") = r0_val;
-  __asm__ volatile("mov sp, %0; bx %1" :: "r" (sp), "r" (pc), "r" (r0));
-  (void) r0_val;
+  return true;
 }
 
 void bootloader(void)
@@ -323,11 +315,13 @@ void bootloader(void)
   jump_to_flash(FLASH_FW_ADDR, 0);
 
 run_bootloader:
+  // configure system to run on external XTAL
   clock_init_crystal(GCLK_SYSTEM, 1);
-  /*
-  initialize USB
-  */
 
+  // startup i2c
+  i2c_setup();
+
+  //  initialize USB
   PORT->Group[0].PINCFG[24].reg |= PORT_PINCFG_PMUXEN;
   PORT->Group[0].PINCFG[25].reg |= PORT_PINCFG_PMUXEN;
   PORT->Group[0].PMUX[24 >> 1].reg = PORT_PMUX_PMUXO(PORT_PMUX_PMUXE_G_Val) | PORT_PMUX_PMUXE(PORT_PMUX_PMUXE_G_Val);
@@ -347,10 +341,20 @@ run_bootloader:
   USB->DEVICE.CTRLB.reg = USB_DEVICE_CTRLB_SPDCONF_FS;
   USB->DEVICE.CTRLA.reg |= USB_CTRLA_ENABLE;
 
-  /*
-  service USB
-  */
-
-  while (1)
-  { USB_Service(); }
+  // service USB
+  int cnt = 0, cnt2 = 0;
+  while (1)  {
+    USB_Service();
+    if (dfu_done == 1) {
+      if (cnt2++ == 5 * LED_BLINK_CYCLES) {
+        i2c_cleanup();
+        USB->DEVICE.CTRLA.reg &= !USB_CTRLA_ENABLE;
+        jump_to_flash(FLASH_FW_ADDR, 0);
+      }
+    }
+    if (cnt++ == LED_BLINK_CYCLES) {
+      i2c_led_toggle();
+      cnt = 0;
+    }
+  }
 }

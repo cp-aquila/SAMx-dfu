@@ -36,5 +36,17 @@
 
 #define LIMIT(a, b)     (((a) > (b)) ? (b) : (a))
 
+/*- Typedefs -------------------------------------------------------------*/
+typedef struct Pin {
+  uint8_t mux;
+  uint8_t group;
+  uint8_t pin;
+  uint8_t chan;
+} Pin;
+
+/*- Prototypes -------------------------------------------------------------*/
+void pin_mux(Pin p);
+void jump_to_flash(uint32_t addr_p, uint32_t r0_val);
+
 #endif // _UTILS_H_
 
