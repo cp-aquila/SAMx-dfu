@@ -46,8 +46,8 @@ usb_device_descriptor_t usb_device_descriptor __attribute__((aligned(4))) =   /*
 
   .bMaxPacketSize0        = 64,
   .idVendor               = 0x1209,
-  .idProduct              = 0x2003,
-  .bcdDevice              = 0x0005,
+  .idProduct              = 0x7555,
+  .bcdDevice              = DFU_VERSION,
 
   .iManufacturer          = USB_STRING_MANU,
   .iProduct               = USB_STRING_PRODUCT,
@@ -60,30 +60,6 @@ usb_string_descriptor usb_string_lang __attribute__((aligned(4))) = {
   .bLength = 4,
   .bDescriptorType = USB_STRING_DESCRIPTOR,
   .bString = {USB_LANGUAGE_EN_US},
-};
-
-usb_string_descriptor usb_string_manu __attribute__((aligned(4))) = {
-  .bLength = 20,
-  .bDescriptorType = USB_STRING_DESCRIPTOR,
-  .bString = {'A', 0, 'Q', 0, 'I', 0, 'L', 0, 'A', 0, ' ', 0, 'B', 0, 'I', 0, 'O', 0},
-};
-
-usb_string_descriptor usb_string_serial __attribute__((aligned(4))) = {
-  .bLength = 10,
-  .bDescriptorType = USB_STRING_DESCRIPTOR,
-  .bString = {'1', 0, '3', 0, '3', 0, '7', 0},
-};
-
-usb_string_descriptor usb_string_empty __attribute__((aligned(4))) = {
-  .bLength = 4,
-  .bDescriptorType = USB_STRING_DESCRIPTOR,
-  .bString = {0, 0},
-};
-
-usb_string_descriptor usb_string_dfu_flash __attribute__((aligned(4))) = {
-  .bLength = 12,
-  .bDescriptorType = USB_STRING_DESCRIPTOR,
-  .bString = {'F', 0, 'L', 0, 'A', 0, 'S', 0, 'H', 0},
 };
 
 usb_string_descriptor usb_string_msftos __attribute__((aligned(4))) = {

@@ -54,7 +54,7 @@
 #define DFU_ATTR_MANIFESTATION_TOLERANT (1<<2)
 #define DFU_ATTR_WILL_DETACH (1<<3)
 
-#define USB_LANGUAGE_EN_US 0x0409
+#define USB_LANGUAGE_EN_US 0x04, 0x09
 
 enum {
   USB_GET_STATUS        = 0,
@@ -68,7 +68,6 @@ enum {
   USB_GET_INTERFACE     = 10,
   USB_SET_INTERFACE     = 11,
   USB_SYNCH_FRAME       = 12,
-  USB_GET_MSFT          = 0xee
 };
 
 enum {

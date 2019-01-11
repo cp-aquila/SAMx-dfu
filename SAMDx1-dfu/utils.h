@@ -36,6 +36,10 @@
 
 #define LIMIT(a, b)     (((a) > (b)) ? (b) : (a))
 
+#define ATSAMR21G18_MR210UA_USERROW_ADDRESS (0x804008)
+#define ATSAMR21G18_MR210UA_USERROW_MIB_VERSION (0x1501)
+
+
 /*- Typedefs -------------------------------------------------------------*/
 typedef struct Pin {
   uint8_t mux;
@@ -43,6 +47,18 @@ typedef struct Pin {
   uint8_t pin;
   uint8_t chan;
 } Pin;
+
+typedef struct __attribute__((packed))
+{
+  uint16_t mib_revision;
+  uint8_t  ieee_address[8];
+  char     board_serial[10];
+  char     atmel_part_number[8];
+  uint8_t  pcba_rev;
+  uint8_t  xtal_trim;
+  uint16_t crc;
+}
+ee_data_t;
 
 /*- Prototypes -------------------------------------------------------------*/
 void pin_mux(Pin p);

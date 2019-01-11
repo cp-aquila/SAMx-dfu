@@ -108,6 +108,43 @@ static void udc_control_send_zlp(void)
   udc_control_send(NULL, 0); /* peripheral can't read from NULL address, but size is zero and this value takes less space to compile */
 }
 
+#define USB_STRING_MAX_LEN (16 * 2) // 16 chars for a 64bit mac address without columns
+#define USB_STRING_PLACEHOLDER "                                  "
+usb_string_descriptor usb_string_g __attribute__((aligned(4))) = {
+  .bLength = USB_STRING_MAX_LEN,
+  .bDescriptorType = USB_STRING_DESCRIPTOR,
+  .bString = USB_STRING_PLACEHOLDER,
+};
+
+static void usb_send_string(const char* text)
+{
+  int s = strlen(text);
+  if (s > USB_STRING_MAX_LEN) {
+    s = USB_STRING_MAX_LEN;
+  }
+  usb_string_g.bLength = s * 2 + 2;
+  for (int i = 0; i < s; i++) {
+    usb_string_g.bString[i * 2] = text[i];
+    usb_string_g.bString[i * 2 + 1] = 0;
+  }
+  udc_control_send((uint32_t*)&usb_string_g, usb_string_g.bLength);
+}
+
+static void usb_send_serial(void)
+{
+  ee_data_t* e = (ee_data_t*)0x804008;
+  usb_string_g.bLength = 34;
+  for (int i = 0; i < 16; i += 2) {
+    uint8_t b = e->ieee_address[i / 2];
+    usb_string_g.bString[i * 2 + 0] = "0123456789ABCDEF"[b >> 4 & 0x0F];
+    usb_string_g.bString[i * 2 + 1] = 0;
+    usb_string_g.bString[i * 2 + 2] = "0123456789ABCDEF"[b & 0x0F];
+    usb_string_g.bString[i * 2 + 3] = 0;
+  }
+  udc_control_send((uint32_t*)&usb_string_g, usb_string_g.bLength);
+}
+
+
 //-----------------------------------------------------------------------------
 static void USB_Service(void)
 {
@@ -174,8 +211,9 @@ static void USB_Service(void)
 
     // handle Microsoft thing
     if (USB_CMD(IN, DEVICE, VENDOR) == request->bmRequestType) {
-      if ((request->bRequest == USB_GET_MSFT) && (request->wIndex = 0x0004)) {
-        udc_control_send((uint32_t*)&msft_compatible, msft_compatible.dwLength);
+      // 0x20, since we put a whitespace (=0x20) after "MSFT100" String.
+      if ((request->bRequest == 0x20) && (request->wIndex = 0x0004)) {
+        udc_control_send((uint32_t*)&msft_compatible, length);
       } else {
         USB->DEVICE.DeviceEndpoint[0].EPSTATUSSET.bit.STALLRQ1 = 1;
       }
@@ -201,20 +239,22 @@ static void USB_Service(void)
                     udc_control_send((uint32_t*)&usb_string_lang, usb_string_lang.bLength);
                     break;
                   case USB_STRING_MANU:
+                    usb_send_string("AquilaBiolabs");
+                    break;
                   case USB_STRING_PRODUCT:
-                    udc_control_send((uint32_t*)&usb_string_manu, usb_string_manu.bLength);
+                    usb_send_string("DFU Bootloader");
                     break;
                   case USB_STRING_SERIAL:
-                    udc_control_send((uint32_t*)&usb_string_serial, usb_string_serial.bLength);
+                    usb_send_serial();
                     break;
                   case USB_STRING_DFU_FLASH:
-                    udc_control_send((uint32_t*)&usb_string_dfu_flash, usb_string_dfu_flash.bLength);
+                    usb_send_string("Flash");
                     break;
                   case USB_STRING_F0:
-                    udc_control_send((uint32_t*)&usb_string_empty, usb_string_empty.bLength);
+                    usb_send_string(" ");
                     break;
                   case USB_STRING_MSFT:
-                    udc_control_send((uint32_t*)&usb_string_msftos, usb_string_msftos.bLength);
+                    usb_send_string("MSFT100 ");
                     break;
                   default:
                     USB->DEVICE.DeviceEndpoint[0].EPSTATUSSET.bit.STALLRQ1 = 1;
