@@ -34,8 +34,8 @@ SEARCH_DIR(.)
 /* Memory Spaces Definitions */
 MEMORY
 {
-  rom    (rx)  : ORIGIN = 0x00000000, LENGTH = 0x00001F80
-  ver    (r)   : ORIGIN = 0x00001F80, LENGTH = 0x00000080
+  rom    (rx)  : ORIGIN = 0x00000000, LENGTH = 0x00000F80
+  ver    (r)   : ORIGIN = 0x00000F80, LENGTH = 0x00000080
   ram    (rwx) : ORIGIN = 0x20000000, LENGTH = 0x00001000
 }
 
@@ -46,6 +46,12 @@ ENTRY(Reset_Handler)
 
 SECTIONS
 {
+  .version :
+  {
+      . = ALIGN(4);
+      KEEP(*(.version))
+  } > ver
+
   .text : ALIGN(4)
   {
     FILL(0xff)
