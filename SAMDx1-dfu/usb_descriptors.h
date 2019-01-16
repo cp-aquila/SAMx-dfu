@@ -60,9 +60,8 @@ typedef struct PACK
 //-----------------------------------------------------------------------------
 extern usb_device_descriptor_t usb_device_descriptor;
 extern usb_configuration_hierarchy_t usb_configuration_hierarchy;
-extern usb_string_descriptor usb_string_msftos;
 extern usb_string_descriptor usb_string_lang;
-extern USB_MicrosoftCompatibleDescriptor msft_compatible;
+extern usb_microsoft_compat_descriptor_t msft_compatible;
 
 #endif // _USB_DESCRIPTORS_H_
 

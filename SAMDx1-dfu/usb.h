@@ -92,7 +92,6 @@ enum {
   USB_STRING_PRODUCT = 2,
   USB_STRING_SERIAL = 3,
   USB_STRING_DFU_FLASH = 16,
-  USB_STRING_F0 = 0xF0,
   USB_STRING_MSFT = 0xEE
 };
 
@@ -208,7 +207,7 @@ typedef struct PACK {
   uint8_t bCount;
   uint8_t reserved[7];
   USB_MicrosoftCompatibleDescriptor_Interface interfaces[];
-} USB_MicrosoftCompatibleDescriptor;
+} usb_microsoft_compat_descriptor_t;
 
 /*- Prototypes --------------------------------------------------------------*/
 

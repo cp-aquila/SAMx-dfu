@@ -46,7 +46,7 @@ usb_device_descriptor_t usb_device_descriptor __attribute__((aligned(4))) =   /*
 
   .bMaxPacketSize0        = 64,
   .idVendor               = 0x1209,
-  .idProduct              = 0x7555,
+  .idProduct              = 0x7556,
   .bcdDevice              = DFU_VERSION,
 
   .iManufacturer          = USB_STRING_MANU,
@@ -62,14 +62,8 @@ usb_string_descriptor usb_string_lang __attribute__((aligned(4))) = {
   .bString = {USB_LANGUAGE_EN_US},
 };
 
-usb_string_descriptor usb_string_msftos __attribute__((aligned(4))) = {
-  .bLength = 18,
-  .bDescriptorType = USB_STRING_DESCRIPTOR,
-  .bString = {'M', 0, 'S', 0, 'F', 0, 'T', 0, '1', 0, '0', 0, '0', 0, 0xee, 0},
-};
-
-USB_MicrosoftCompatibleDescriptor msft_compatible __attribute__((aligned(4))) = {
-  .dwLength = sizeof(USB_MicrosoftCompatibleDescriptor) + sizeof(USB_MicrosoftCompatibleDescriptor_Interface),
+usb_microsoft_compat_descriptor_t msft_compatible __attribute__((aligned(4))) = {
+  .dwLength = sizeof(usb_microsoft_compat_descriptor_t) + sizeof(USB_MicrosoftCompatibleDescriptor_Interface),
   .bcdVersion = 0x0100,
   .wIndex = 0x0004,
   .bCount = 1,

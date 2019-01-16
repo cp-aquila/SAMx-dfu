@@ -117,7 +117,7 @@ usb_string_descriptor usb_string_g __attribute__((aligned(4))) = {
   .bString = USB_STRING_PLACEHOLDER,
 };
 
-static void usb_send_string(const char* text)
+static void usb_send_string(const char* text, uint32_t len)
 {
   int s = strlen(text);
   if (s > USB_STRING_MAX_LEN) {
@@ -128,10 +128,10 @@ static void usb_send_string(const char* text)
     usb_string_g.bString[i * 2] = text[i];
     usb_string_g.bString[i * 2 + 1] = 0;
   }
-  udc_control_send((uint32_t*)&usb_string_g, usb_string_g.bLength);
+  udc_control_send((uint32_t*)&usb_string_g, len);
 }
 
-static void usb_send_serial(void)
+static void usb_send_serial(uint32_t len)
 {
   ee_data_t* e = (ee_data_t*)0x804008;
   usb_string_g.bLength = 34;
@@ -142,7 +142,7 @@ static void usb_send_serial(void)
     usb_string_g.bString[i * 2 + 2] = "0123456789ABCDEF"[b & 0x0F];
     usb_string_g.bString[i * 2 + 3] = 0;
   }
-  udc_control_send((uint32_t*)&usb_string_g, usb_string_g.bLength);
+  udc_control_send((uint32_t*)&usb_string_g, len);
 }
 
 
@@ -213,7 +213,7 @@ static void USB_Service(void)
     // handle Microsoft thing
     if (USB_CMD(IN, DEVICE, VENDOR) == request->bmRequestType) {
       // 0x20, since we put a whitespace (=0x20) after "MSFT100" String.
-      if ((request->bRequest == 0x20) && (request->wIndex = 0x0004)) {
+      if ((request->bRequest == 0x20) && (request->wIndex == 0x0004)) {
         udc_control_send((uint32_t*)&msft_compatible, length);
       } else {
         USB->DEVICE.DeviceEndpoint[0].EPSTATUSSET.bit.STALLRQ1 = 1;
@@ -237,25 +237,22 @@ static void USB_Service(void)
               case USB_STRING_DESCRIPTOR:
                 switch (index) {
                   case USB_STRING_LANG:
-                    udc_control_send((uint32_t*)&usb_string_lang, usb_string_lang.bLength);
+                    udc_control_send((uint32_t*)&usb_string_lang, length);
                     break;
                   case USB_STRING_MANU:
-                    usb_send_string("AquilaBiolabs");
+                    usb_send_string("AquilaBiolabs", length);
                     break;
                   case USB_STRING_PRODUCT:
-                    usb_send_string("DFU Bootloader");
+                    usb_send_string("DFU Bootloader", length);
                     break;
                   case USB_STRING_SERIAL:
-                    usb_send_serial();
+                    usb_send_serial(length);
                     break;
                   case USB_STRING_DFU_FLASH:
-                    usb_send_string("Flash");
-                    break;
-                  case USB_STRING_F0:
-                    usb_send_string(" ");
+                    usb_send_string("Flash", length);
                     break;
                   case USB_STRING_MSFT:
-                    usb_send_string("MSFT100 ");
+                    usb_send_string("MSFT100 ", length);
                     break;
                   default:
                     USB->DEVICE.DeviceEndpoint[0].EPSTATUSSET.bit.STALLRQ1 = 1;
