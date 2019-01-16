@@ -6,6 +6,7 @@
  */
 
 #include <sam.h>
+#include <stdbool.h>
 #include "utils.h"
 
 void pin_mux(Pin p)
@@ -18,6 +19,44 @@ void pin_mux(Pin p)
 
   PORT->Group[p.group].PINCFG[p.pin].bit.PMUXEN = 1;
 }
+
+void pin_out(Pin p) {
+  PORT->Group[p.group].PINCFG[p.pin].bit.PMUXEN = 0;
+  PORT->Group[p.group].DIRSET.reg = (1<<p.pin);
+}
+
+void pin_low(Pin p) {
+  PORT->Group[p.group].OUTCLR.reg = (1<<p.pin);
+}
+
+void pin_high(Pin p) {
+  PORT->Group[p.group].OUTSET.reg = (1<<p.pin);
+}
+
+void pin_in(Pin p) {
+  PORT->Group[p.group].PINCFG[p.pin].bit.PMUXEN = 0;
+  PORT->Group[p.group].PINCFG[p.pin].bit.INEN = 1;
+  PORT->Group[p.group].DIRCLR.reg = (1<<p.pin);
+}
+
+void pin_pull_up(Pin p) {
+  PORT->Group[p.group].PINCFG[p.pin].bit.PMUXEN = 0;
+  PORT->Group[p.group].PINCFG[p.pin].bit.PULLEN = 1;
+  pin_high(p);
+}
+
+bool pin_read(Pin p) {
+  return (PORT->Group[p.group].IN.reg & (1<<p.pin)) != 0;
+}
+
+void delay_cycles(uint32_t cy)
+{
+  while (cy > 1) {
+    cy--;
+  }
+  return;
+}
+
 
 void jump_to_flash(uint32_t addr_p, uint32_t r0_val)
 {

@@ -62,6 +62,15 @@ ee_data_t;
 
 /*- Prototypes -------------------------------------------------------------*/
 void pin_mux(Pin p);
+void pin_out(Pin p);
+void pin_low(Pin p);
+void pin_high(Pin p);
+void pin_in(Pin p);
+void pin_pull_up(Pin p);
+bool pin_read(Pin p);
+
+void delay_cycles(uint32_t cy);
+
 void jump_to_flash(uint32_t addr_p, uint32_t r0_val);
 
 #endif // _UTILS_H_
