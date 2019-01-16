@@ -41,6 +41,7 @@ NOTES:
 #include <string.h>
 #include <sam.h>
 #include "clock.h"
+#include "crc16.h"
 #include "usb.h"
 #include "nvm_data.h"
 #include "usb_descriptors.h"
@@ -397,4 +398,12 @@ run_bootloader:
       cnt = 0;
     }
   }
+  static char str[] = "123456789";
+  crc_t crc;
+
+  crc = crc_init();
+  crc = crc_update(crc, (unsigned char*)str, strlen(str));
+  crc = crc_finalize(crc);
+
+  //printf("0x%lx\n", (unsigned long)crc);
 }

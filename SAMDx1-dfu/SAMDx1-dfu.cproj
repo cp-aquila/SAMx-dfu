@@ -171,6 +171,12 @@
     <Compile Include="clock.h">
       <SubType>compile</SubType>
     </Compile>
+    <Compile Include="crc16.c">
+      <SubType>compile</SubType>
+    </Compile>
+    <Compile Include="crc16.h">
+      <SubType>compile</SubType>
+    </Compile>
     <Compile Include="peripherals.c">
       <SubType>compile</SubType>
     </Compile>
