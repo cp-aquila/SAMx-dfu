@@ -5,4 +5,6 @@ void i2c_led_toggle(void);
 void i2c_setup(void);
 void i2c_cleanup(void);
 
+bool usb_dongle_present(void);
+
 #endif

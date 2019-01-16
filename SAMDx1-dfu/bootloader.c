@@ -340,14 +340,9 @@ static bool wdt_reset_entry_condition(void)
   return ((PM->RCAUSE.reg & PM_RCAUSE_WDT) && !(RTC->MODE1.CTRL.reg & RTC_MODE0_CTRL_ENABLE));
 }
 
-static bool button_pressed(void)
-{
-  return true;
-}
-
 void bootloader(void)
 {
-  if (!flash_valid() || button_pressed() || wdt_reset_entry_condition()) {
+  if (!flash_valid() || usb_dongle_present() || wdt_reset_entry_condition()) {
     goto run_bootloader;
   }
   jump_to_flash(FLASH_FW_ADDR, 0);
