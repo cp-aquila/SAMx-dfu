@@ -57,7 +57,7 @@
 			<CSub></CSub>
 			<CVariant></CVariant>
 			<CVendor>Atmel</CVendor>
-			<CVersion>1.1.0</CVersion>
+			<CVersion>1.0.0</CVersion>
 			<DefaultRepoPath>C:/Program Files (x86)\Atmel\Studio\7.0\Packs</DefaultRepoPath>
 			<DependentComponents xmlns:d4p1="http://schemas.microsoft.com/2003/10/Serialization/Arrays">
 				<d4p1:anyType z:Ref="i1" />
@@ -65,7 +65,7 @@
 			<Description></Description>
 			<Files xmlns:d4p1="http://schemas.microsoft.com/2003/10/Serialization/Arrays">
 				<d4p1:anyType i:type="FileInfo">
-					<AbsolutePath>C:/Program Files (x86)\Atmel\Studio\7.0\Packs\atmel\SAMR21_DFP\1.1.72\include</AbsolutePath>
+					<AbsolutePath>C:/Program Files (x86)\Atmel\Studio\7.0\Packs\Atmel\SAME54_DFP\1.0.87\include</AbsolutePath>
 					<Attribute></Attribute>
 					<Category>include</Category>
 					<Condition>C</Condition>
@@ -76,18 +76,18 @@
 					<SourcePath></SourcePath>
 				</d4p1:anyType>
 				<d4p1:anyType i:type="FileInfo">
-					<AbsolutePath>C:/Program Files (x86)\Atmel\Studio\7.0\Packs\atmel\SAMR21_DFP\1.1.72\include\sam.h</AbsolutePath>
+					<AbsolutePath>C:/Program Files (x86)\Atmel\Studio\7.0\Packs\Atmel\SAME54_DFP\1.0.87\include\sam.h</AbsolutePath>
 					<Attribute></Attribute>
 					<Category>header</Category>
 					<Condition>C</Condition>
-					<FileContentHash>5nXD+bsGgoMCShszpIie3Q==</FileContentHash>
+					<FileContentHash>3JI14I9Nd3YLcucuzoTYJg==</FileContentHash>
 					<FileVersion></FileVersion>
 					<Name>include/sam.h</Name>
 					<SelectString></SelectString>
 					<SourcePath></SourcePath>
 				</d4p1:anyType>
 				<d4p1:anyType i:type="FileInfo">
-					<AbsolutePath>C:/Program Files (x86)\Atmel\Studio\7.0\Packs\atmel\SAMR21_DFP\1.1.72\templates\main.c</AbsolutePath>
+					<AbsolutePath>C:/Program Files (x86)\Atmel\Studio\7.0\Packs\Atmel\SAME54_DFP\1.0.87\templates\main.c</AbsolutePath>
 					<Attribute>template</Attribute>
 					<Category>source</Category>
 					<Condition>C Exe</Condition>
@@ -98,7 +98,7 @@
 					<SourcePath></SourcePath>
 				</d4p1:anyType>
 				<d4p1:anyType i:type="FileInfo">
-					<AbsolutePath>C:/Program Files (x86)\Atmel\Studio\7.0\Packs\atmel\SAMR21_DFP\1.1.72\templates\main.cpp</AbsolutePath>
+					<AbsolutePath>C:/Program Files (x86)\Atmel\Studio\7.0\Packs\Atmel\SAME54_DFP\1.0.87\templates\main.cpp</AbsolutePath>
 					<Attribute>template</Attribute>
 					<Category>source</Category>
 					<Condition>C Exe</Condition>
@@ -109,55 +109,55 @@
 					<SourcePath></SourcePath>
 				</d4p1:anyType>
 				<d4p1:anyType i:type="FileInfo">
-					<AbsolutePath>C:/Program Files (x86)\Atmel\Studio\7.0\Packs\atmel\SAMR21_DFP\1.1.72\gcc\system_samr21.c</AbsolutePath>
+					<AbsolutePath>C:/Program Files (x86)\Atmel\Studio\7.0\Packs\Atmel\SAME54_DFP\1.0.87\gcc\system_same54.c</AbsolutePath>
 					<Attribute>config</Attribute>
 					<Category>source</Category>
 					<Condition>GCC Exe</Condition>
-					<FileContentHash>IWSzZMZyyHEucKfTAlBiJA==</FileContentHash>
+					<FileContentHash>8TwsHKZ+EracJnsHYrYnWw==</FileContentHash>
 					<FileVersion></FileVersion>
-					<Name>gcc/system_samr21.c</Name>
+					<Name>gcc/system_same54.c</Name>
 					<SelectString></SelectString>
 					<SourcePath></SourcePath>
 				</d4p1:anyType>
 				<d4p1:anyType i:type="FileInfo">
-					<AbsolutePath>C:/Program Files (x86)\Atmel\Studio\7.0\Packs\atmel\SAMR21_DFP\1.1.72\gcc\gcc\startup_samr21.c</AbsolutePath>
+					<AbsolutePath>C:/Program Files (x86)\Atmel\Studio\7.0\Packs\Atmel\SAME54_DFP\1.0.87\gcc\gcc\startup_same54.c</AbsolutePath>
 					<Attribute>config</Attribute>
 					<Category>source</Category>
 					<Condition>GCC Exe</Condition>
-					<FileContentHash>QYkL/QdV/mayb5XoGMBHbA==</FileContentHash>
+					<FileContentHash>ZP2anJPKQApV7bBwX4foLA==</FileContentHash>
 					<FileVersion></FileVersion>
-					<Name>gcc/gcc/startup_samr21.c</Name>
+					<Name>gcc/gcc/startup_same54.c</Name>
 					<SelectString></SelectString>
 					<SourcePath></SourcePath>
 				</d4p1:anyType>
 				<d4p1:anyType i:type="FileInfo">
-					<AbsolutePath>C:/Program Files (x86)\Atmel\Studio\7.0\Packs\atmel\SAMR21_DFP\1.1.72\gcc\gcc\samr21g18a_flash.ld</AbsolutePath>
+					<AbsolutePath>C:/Program Files (x86)\Atmel\Studio\7.0\Packs\Atmel\SAME54_DFP\1.0.87\gcc\gcc\same54n19a_flash.ld</AbsolutePath>
 					<Attribute>config</Attribute>
 					<Category>linkerScript</Category>
 					<Condition>GCC Exe</Condition>
-					<FileContentHash>/mvRq6gvMPeZ+6+vhn4axg==</FileContentHash>
+					<FileContentHash>7MTm1/bA2kjH7AEuJOg+Lg==</FileContentHash>
 					<FileVersion></FileVersion>
-					<Name>gcc/gcc/samr21g18a_flash.ld</Name>
+					<Name>gcc/gcc/same54n19a_flash.ld</Name>
 					<SelectString></SelectString>
 					<SourcePath></SourcePath>
 				</d4p1:anyType>
 				<d4p1:anyType i:type="FileInfo">
-					<AbsolutePath>C:/Program Files (x86)\Atmel\Studio\7.0\Packs\atmel\SAMR21_DFP\1.1.72\gcc\gcc\samr21g18a_sram.ld</AbsolutePath>
+					<AbsolutePath>C:/Program Files (x86)\Atmel\Studio\7.0\Packs\Atmel\SAME54_DFP\1.0.87\gcc\gcc\same54n19a_sram.ld</AbsolutePath>
 					<Attribute>config</Attribute>
 					<Category>other</Category>
 					<Condition>GCC Exe</Condition>
-					<FileContentHash>3UfVYXmJuwXcNDK/Jt/KtQ==</FileContentHash>
+					<FileContentHash>KIgLVNzcGzmajYgapcmasw==</FileContentHash>
 					<FileVersion></FileVersion>
-					<Name>gcc/gcc/samr21g18a_sram.ld</Name>
+					<Name>gcc/gcc/same54n19a_sram.ld</Name>
 					<SelectString></SelectString>
 					<SourcePath></SourcePath>
 				</d4p1:anyType>
 			</Files>
-			<PackName>SAMR21_DFP</PackName>
-			<PackPath>C:/Program Files (x86)/Atmel/Studio/7.0/Packs/atmel/SAMR21_DFP/1.1.72/Atmel.SAMR21_DFP.pdsc</PackPath>
-			<PackVersion>1.1.72</PackVersion>
+			<PackName>SAME54_DFP</PackName>
+			<PackPath>C:/Program Files (x86)/Atmel/Studio/7.0/Packs/Atmel/SAME54_DFP/1.0.87/Atmel.SAME54_DFP.pdsc</PackPath>
+			<PackVersion>1.0.87</PackVersion>
 			<PresentInProject>true</PresentInProject>
-			<ReferenceConditionId>ATSAMR21G18A</ReferenceConditionId>
+			<ReferenceConditionId>ATSAME54N19A</ReferenceConditionId>
 			<RteComponents xmlns:d4p1="http://schemas.microsoft.com/2003/10/Serialization/Arrays">
 				<d4p1:string></d4p1:string>
 			</RteComponents>
