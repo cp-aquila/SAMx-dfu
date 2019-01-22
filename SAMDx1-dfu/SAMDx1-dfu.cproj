@@ -138,7 +138,7 @@
   <armgcc.compiler.warnings.AllWarnings>True</armgcc.compiler.warnings.AllWarnings>
   <armgcc.linker.libraries.LibrarySearchPaths>
     <ListValues>
-      <Value>%24(ProjectDir)</Value>
+      <Value>%24(ProjectDir)\Device_Startup</Value>
     </ListValues>
   </armgcc.linker.libraries.LibrarySearchPaths>
   <armgcc.linker.optimization.GarbageCollectUnusedSections>True</armgcc.linker.optimization.GarbageCollectUnusedSections>
@@ -206,12 +206,15 @@
     </Compile>
   </ItemGroup>
   <ItemGroup>
+    <None Include="Device_Startup\bootloader_flash.ld">
+      <SubType>compile</SubType>
+    </None>
     <None Include="SAMDx1-dfu.componentinfo.xml">
       <SubType>compile</SubType>
     </None>
-    <None Include="bootloader_flash.ld">
-      <SubType>compile</SubType>
-    </None>
+  </ItemGroup>
+  <ItemGroup>
+    <Folder Include="Device_Startup" />
   </ItemGroup>
   <Import Project="$(AVRSTUDIO_EXE_PATH)\\Vs\\Compiler.targets" />
 </Project>
