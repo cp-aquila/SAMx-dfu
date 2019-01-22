@@ -51,37 +51,20 @@ void gclk_enable(uint32_t id, uint32_t src, uint32_t div)
 
 void gclk_init()
 {
-  // Various bits in the INTFLAG register can be set to one at startup.
-#ifdef __SAME54N19A__
-#warning "Do we need this?"
-#else
-  SYSCTRL->INTFLAG.reg = SYSCTRL_INTFLAG_BOD33RDY | SYSCTRL_INTFLAG_BOD33DET |  SYSCTRL_INTFLAG_DFLLRDY;
-#endif
-
-
   // Initialize GCLK
 #ifdef __SAME54N19A__
   NVMCTRL->CTRLA.bit.RWS = 2;
   MCLK->APBAMASK.reg |= MCLK_APBAMASK_GCLK;
   GCLK->CTRLA.reg = GCLK_CTRLA_SWRST;
-
-#warning TODO
-  // SERCOM slow clock (Shared by all SERCOM)
-  /*
-  GCLK->GENCTRL.reg = GCLK_CLKCTRL_CLKEN |
-                      GCLK_CLKCTRL_GEN(0) |
-                      GCLK_CLKCTRL_ID(SERCOM0_GCLK_ID_SLOW);
-                      */
   while (GCLK->CTRLA.reg & GCLK_CTRLA_SWRST);
 
 #else
+  // Various bits in the INTFLAG register can be set to one at startup.
+  SYSCTRL->INTFLAG.reg = SYSCTRL_INTFLAG_BOD33RDY | SYSCTRL_INTFLAG_BOD33DET |  SYSCTRL_INTFLAG_DFLLRDY;
+
   NVMCTRL->CTRLB.bit.RWS = 2;
   PM->APBAMASK.reg |= PM_APBAMASK_GCLK;
   GCLK->CTRL.reg = GCLK_CTRL_SWRST;
-  // SERCOM slow clock (Shared by all SERCOM)
-  GCLK->CLKCTRL.reg = GCLK_CLKCTRL_CLKEN |
-                      GCLK_CLKCTRL_GEN(0) |
-                      GCLK_CLKCTRL_ID(SERCOM0_GCLK_ID_SLOW);
   while (GCLK->CTRL.reg & GCLK_CTRL_SWRST);
 #endif
 }
@@ -91,7 +74,20 @@ void clock_init_crystal(uint8_t clk_system, uint8_t clk_32k)
   gclk_init();
 
 #ifdef __SAME54N19A__
-#warning TODO
+  // configure XOSC1 for 12Mhz XTAL Operation
+  OSCCTRL->XOSCCTRL[1].reg = OSCCTRL_XOSCCTRL_ENABLE | OSCCTRL_XOSCCTRL_XTALEN |  OSCCTRL_XOSCCTRL_IPTAT(3) | OSCCTRL_XOSCCTRL_IMULT(4) | OSCCTRL_XOSCCTRL_CFDPRESC(3);
+  while (!(OSCCTRL->STATUS.reg & OSCCTRL_STATUS_XOSCRDY1));
+  // configure DPLL0 with GCLK1 source, output 48Mhz
+  OSCCTRL->Dpll[0].DPLLCTRLB.reg = OSCCTRL_DPLLCTRLB_REFCLK_XOSC1 | OSCCTRL_DPLLCTRLB_DIV(2); // effective divider 6 (28.8.14)
+  OSCCTRL->Dpll[0].DPLLRATIO.reg = OSCCTRL_DPLLRATIO_LDR(23); // effective multiplier 24
+  OSCCTRL->Dpll[0].DPLLCTRLA.reg = OSCCTRL_DPLLCTRLA_ENABLE;
+  while (!(OSCCTRL->Dpll[0].DPLLSTATUS.reg & OSCCTRL_DPLLSTATUS_LOCK));
+
+  // run GCLK0 (48MHz)
+  gclk_enable(0, GCLK_GENCTRL_SRC_DPLL0, 1);
+
+  // GCLK1 (32kHz)
+  gclk_enable(1, GCLK_GENCTRL_SRC_OSCULP32K, 1);
 #else
   SYSCTRL->XOSC32K.reg
     = SYSCTRL_XOSC32K_ENABLE
