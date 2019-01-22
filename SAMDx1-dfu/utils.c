@@ -29,6 +29,10 @@ void pin_low(Pin p) {
   PORT->Group[p.group].OUTCLR.reg = (1<<p.pin);
 }
 
+void pin_toggle(Pin p) {
+  PORT->Group[p.group].OUTTGL.reg = (1<<p.pin);
+}
+
 void pin_high(Pin p) {
   PORT->Group[p.group].OUTSET.reg = (1<<p.pin);
 }

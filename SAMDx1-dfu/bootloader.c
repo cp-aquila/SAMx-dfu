@@ -364,8 +364,15 @@ run_bootloader:
   // configure system to run on external XTAL
   clock_init_crystal(GCLK_SYSTEM, 1);
 
+#ifdef __SAME54N19A__
+  pin_out(PIN_LEDR);
+  pin_out(PIN_LEDG);
+  pin_low(PIN_LEDR);
+  pin_high(PIN_LEDG);
+#else
   // startup i2c
   i2c_setup();
+#endif
 
   //  initialize USB
   pin_mux(PIN_DP);
@@ -406,7 +413,12 @@ run_bootloader:
       }
     }
     if (cnt++ == LED_BLINK_CYCLES) {
+#ifdef __SAME54N19A__
+      pin_toggle(PIN_LEDR);
+      pin_toggle(PIN_LEDG);
+#else
       i2c_led_toggle();
+#endif
       cnt = 0;
     }
   }

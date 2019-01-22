@@ -64,6 +64,7 @@ ee_data_t;
 void pin_mux(Pin p);
 void pin_out(Pin p);
 void pin_low(Pin p);
+void pin_toggle(Pin p);
 void pin_high(Pin p);
 void pin_in(Pin p);
 void pin_pull_up(Pin p);
