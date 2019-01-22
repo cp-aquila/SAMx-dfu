@@ -176,15 +176,24 @@ static void USB_Service(void)
     if (dfu_addr) {
       if (0 == ((dfu_addr >> 6) & 0x3)) {
         NVMCTRL->ADDR.reg = dfu_addr >> 1;
+#ifdef __SAME54N19A__
+        NVMCTRL->CTRLB.reg = NVMCTRL_CTRLB_CMDEX_KEY | NVMCTRL_CTRLB_CMD(NVMCTRL_CTRLB_CMD_EB_Val);
+        while (!NVMCTRL->INTFLAG.bit.DONE);
+#else
         NVMCTRL->CTRLA.reg = NVMCTRL_CTRLA_CMDEX_KEY | NVMCTRL_CTRLA_CMD(NVMCTRL_CTRLA_CMD_ER);
         while (!NVMCTRL->INTFLAG.bit.READY);
+#endif
       }
 
       uint16_t* nvm_addr = (uint16_t*)(dfu_addr);
       uint16_t* ram_addr = (uint16_t*)udc_ctrl_out_buf;
       for (unsigned i = 0; i < 32; i++)
       { *nvm_addr++ = *ram_addr++; }
+#ifdef __SAME54N19A__
+      while (!NVMCTRL->INTFLAG.bit.DONE);
+#else
       while (!NVMCTRL->INTFLAG.bit.READY);
+#endif
 
       udc_control_send_zlp();
       dfu_addr = 0;
@@ -337,7 +346,11 @@ static bool wdt_reset_entry_condition(void)
 {
   // Was reset caused by watchdog timer (WDT)?
   // but RTC not running
+#ifdef __SAME54N19A__
+  return ((RSTC->RCAUSE.reg & RSTC_RCAUSE_WDT) && !(RTC->MODE1.CTRLA.reg & RTC_MODE1_CTRLA_ENABLE));
+#else
   return ((PM->RCAUSE.reg & PM_RCAUSE_WDT) && !(RTC->MODE1.CTRL.reg & RTC_MODE0_CTRL_ENABLE));
+#endif
 }
 
 void bootloader(void)
@@ -355,18 +368,25 @@ run_bootloader:
   i2c_setup();
 
   //  initialize USB
-  PORT->Group[0].PINCFG[24].reg |= PORT_PINCFG_PMUXEN;
-  PORT->Group[0].PINCFG[25].reg |= PORT_PINCFG_PMUXEN;
-  PORT->Group[0].PMUX[24 >> 1].reg = PORT_PMUX_PMUXO(PORT_PMUX_PMUXE_G_Val) | PORT_PMUX_PMUXE(PORT_PMUX_PMUXE_G_Val);
-
+  pin_mux(PIN_DP);
+  pin_mux(PIN_DM);
+#ifdef __SAME54N19A__
+  MCLK->APBBMASK.reg |= MCLK_APBBMASK_USB;
+  //GCLK_USB == 10 (table 14-9)
+  GCLK->PCHCTRL[10].reg = GCLK_PCHCTRL_GEN_GCLK0 | GCLK_PCHCTRL_CHEN;
+#else
   PM->APBBMASK.reg |= PM_APBBMASK_USB;
-
   GCLK->CLKCTRL.reg = GCLK_CLKCTRL_CLKEN | GCLK_CLKCTRL_ID(USB_GCLK_ID) | GCLK_CLKCTRL_GEN(0);
+#endif
 
   USB->DEVICE.CTRLA.reg = USB_CTRLA_SWRST;
   while (USB->DEVICE.SYNCBUSY.bit.SWRST);
 
+#ifdef __SAME54N19A__
+  USB->DEVICE.PADCAL.reg = USB_PADCAL_TRANSN(NVM_READ_CAL(USB_FUSES_TRANSN)) | USB_PADCAL_TRANSP(NVM_READ_CAL(USB_FUSES_TRANSP)) | USB_PADCAL_TRIM(NVM_READ_CAL(USB_FUSES_TRIM));
+#else
   USB->DEVICE.PADCAL.reg = USB_PADCAL_TRANSN(NVM_READ_CAL(NVM_USB_TRANSN)) | USB_PADCAL_TRANSP(NVM_READ_CAL(NVM_USB_TRANSP)) | USB_PADCAL_TRIM(NVM_READ_CAL(NVM_USB_TRIM));
+#endif
 
   USB->DEVICE.DESCADD.reg = (uint32_t)udc_mem;
 

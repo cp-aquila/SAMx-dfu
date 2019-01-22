@@ -3,12 +3,7 @@
 #include <sam.h>
 #include "clock.h"
 #include "utils.h"
-
-const static Pin PIN_VBUS = {.group = 0, .pin = 13, .mux = MUX_PA13A_EIC_EXTINT13 };
-const static Pin PIN_DP   = {.group = 0, .pin = 25, .mux = MUX_PA25G_USB_DP };
-const static Pin PIN_DM   = {.group = 0, .pin = 24, .mux = MUX_PA24G_USB_DM };
-const static Pin PIN_SCL  = {.group = 0, .pin = 16, .mux = MUX_PA16C_SERCOM1_PAD0 };
-const static Pin PIN_SDA  = {.group = 0, .pin = 17, .mux = MUX_PA17C_SERCOM1_PAD1 };
+#include "peripherals.h"
 
 static uint8_t mcp23008_gpio_val;
 
@@ -103,12 +98,20 @@ void i2c_setup(void)
   pin_mux(PIN_SDA);
 
   // turn on clock to module
+#ifdef __SAME54N19A__
+  MCLK->APBAMASK.reg |= 1 << (MCLK_APBAMASK_SERCOM1_Pos);
+  //GCLK_SERCOM1_CORE == 8 (table 14-9)
+  GCLK->PCHCTRL[8].reg = GCLK_PCHCTRL_GEN_GCLK0 | GCLK_PCHCTRL_CHEN;
+  //GCLK_SERCOMx_SLOW == 3 (table 14-9)
+  GCLK->PCHCTRL[3].reg = GCLK_PCHCTRL_GEN_GCLK1 | GCLK_PCHCTRL_CHEN;
+#else
   PM->APBCMASK.reg |= 1 << (PM_APBCMASK_SERCOM1_Pos);
 
   // attach sercom slow clock to generator 1 (32kHz)
   GCLK->CLKCTRL.reg = GCLK_CLKCTRL_ID(GCLK_SERCOMx_SLOW) | GCLK_CLKCTRL_CLKEN | GCLK_CLKCTRL_GEN(1);
   // attach sercom1 clock to generator 0 (48Mhz)
   GCLK->CLKCTRL.reg = GCLK_CLKCTRL_ID(GCLK_SERCOM1_CORE) | GCLK_CLKCTRL_CLKEN | GCLK_CLKCTRL_GEN(0);
+#endif
 
   // reset module
   SERCOM1->SPI.CTRLA.reg = SERCOM_SPI_CTRLA_SWRST;
@@ -116,7 +119,11 @@ void i2c_setup(void)
 
   // configure module as master
   i2c_master_wait_for_sync();
+#ifdef __SAME54N19A__
+  SERCOM1->I2CM.CTRLA.reg = SERCOM_I2CM_CTRLA_MODE(0x05) | SERCOM_I2CM_CTRLA_SDAHOLD(2) | SERCOM_I2CM_CTRLA_RUNSTDBY;
+#else
   SERCOM1->I2CM.CTRLA.reg = SERCOM_I2CM_CTRLA_MODE_I2C_MASTER | SERCOM_I2CM_CTRLA_SDAHOLD(2) | SERCOM_I2CM_CTRLA_RUNSTDBY;
+#endif
 
   // set baud rate
   i2c_master_wait_for_sync();

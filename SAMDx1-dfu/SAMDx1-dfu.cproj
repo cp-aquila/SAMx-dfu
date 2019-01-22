@@ -138,12 +138,12 @@
   <armgcc.compiler.warnings.AllWarnings>True</armgcc.compiler.warnings.AllWarnings>
   <armgcc.linker.libraries.LibrarySearchPaths>
     <ListValues>
-      <Value>%24(ProjectDir)\Device_Startup</Value>
+      <Value>%24(ProjectDir)</Value>
     </ListValues>
   </armgcc.linker.libraries.LibrarySearchPaths>
   <armgcc.linker.optimization.GarbageCollectUnusedSections>True</armgcc.linker.optimization.GarbageCollectUnusedSections>
   <armgcc.linker.memorysettings.ExternalRAM />
-  <armgcc.linker.miscellaneous.LinkerFlags>-T samr21g18a_flash.ld</armgcc.linker.miscellaneous.LinkerFlags>
+  <armgcc.linker.miscellaneous.LinkerFlags>-T bootloader_flash.ld</armgcc.linker.miscellaneous.LinkerFlags>
   <armgcc.assembler.general.IncludePaths>
     <ListValues>
       <Value>%24(PackRepoDir)\arm\cmsis\5.0.1\CMSIS\Include\</Value>
@@ -206,18 +206,12 @@
     </Compile>
   </ItemGroup>
   <ItemGroup>
-    <None Include="Device_Startup\same54n19a_flash.ld">
-      <SubType>compile</SubType>
-    </None>
-    <None Include="Device_Startup\same54n19a_sram.ld">
-      <SubType>compile</SubType>
-    </None>
     <None Include="SAMDx1-dfu.componentinfo.xml">
       <SubType>compile</SubType>
     </None>
-  </ItemGroup>
-  <ItemGroup>
-    <Folder Include="Device_Startup\" />
+    <None Include="bootloader_flash.ld">
+      <SubType>compile</SubType>
+    </None>
   </ItemGroup>
   <Import Project="$(AVRSTUDIO_EXE_PATH)\\Vs\\Compiler.targets" />
 </Project>
