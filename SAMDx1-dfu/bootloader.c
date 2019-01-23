@@ -1,5 +1,5 @@
 /*
- * 1kByte USB DFU bootloader for Atmel SAMD11 microcontrollers
+ * 4kByte USB DFU bootloader for Atmel SAMD and SAME microcontrollers
  *
  * Copyright (c) 2019, Carsten Presser
  * Copyright (c) 2018, Peter Lawrence
@@ -51,7 +51,13 @@ NOTES:
 #define USB_CMD(dir, rcpt, type) ((USB_##dir##_TRANSFER << 7) | (USB_##type##_REQUEST << 5) | (USB_##rcpt##_RECIPIENT << 0))
 #define SIMPLE_USB_CMD(rcpt, type) ((USB_##type##_REQUEST << 5) | (USB_##rcpt##_RECIPIENT << 0))
 #define GCLK_SYSTEM 0
-#define FLASH_BOOT_SIZE 4096
+#ifdef __SAME54N19A__
+#define FLASH_BOOT_SIZE (8192) // minimum size of boot block
+#define FLASH_TOTAL_SIZE (0x00800000)
+#else
+#define FLASH_BOOT_SIZE (4096)
+#define FLASH_TOTAL_SIZE (0x00400000)
+#endif
 #define FLASH_FW_ADDR   FLASH_BOOT_SIZE
 #define LED_BLINK_CYCLES 40000UL
 
@@ -145,7 +151,6 @@ static void usb_send_serial(uint32_t len)
   udc_control_send((uint32_t*)&usb_string_g, len);
 }
 
-
 //-----------------------------------------------------------------------------
 static void USB_Service(void)
 {
@@ -174,27 +179,45 @@ static void USB_Service(void)
   // Handle incoming DFU data packets, write to Flash
   if (USB->DEVICE.DeviceEndpoint[0].EPINTFLAG.bit.TRCPT0) {
     if (dfu_addr) {
+#ifdef __SAME54N19A__
+      // check if we are on the boundary of a block
+      // a block is 16 pages a 512 bytes, so a block starts every 8kb
+      if (0 == (dfu_addr % 8192)) {
+        // erase a block
+        NVMCTRL->INTFLAG.reg = NVMCTRL_INTFLAG_DONE;
+        NVMCTRL->ADDR.reg = dfu_addr;
+        while (NVMCTRL->STATUS.bit.READY == false);
+        NVMCTRL->CTRLB.reg = NVMCTRL_CTRLB_CMDEX_KEY | NVMCTRL_CTRLB_CMD_EB;
+        // wait for completion, clear the intflag
+        while (NVMCTRL->INTFLAG.bit.DONE == false);
+        NVMCTRL->INTFLAG.reg = NVMCTRL_INTFLAG_DONE;
+      }
+#else
       if (0 == ((dfu_addr >> 6) & 0x3)) {
         NVMCTRL->ADDR.reg = dfu_addr >> 1;
-#ifdef __SAME54N19A__
-        NVMCTRL->CTRLB.reg = NVMCTRL_CTRLB_CMDEX_KEY | NVMCTRL_CTRLB_CMD(NVMCTRL_CTRLB_CMD_EB_Val);
-        while (!NVMCTRL->INTFLAG.bit.DONE);
-#else
         NVMCTRL->CTRLA.reg = NVMCTRL_CTRLA_CMDEX_KEY | NVMCTRL_CTRLA_CMD(NVMCTRL_CTRLA_CMD_ER);
         while (!NVMCTRL->INTFLAG.bit.READY);
-#endif
       }
+#endif
 
+#ifdef __SAME54N19A__
+      // writes to the page buffer must be 32 bit
+      // we did set the mode to 'AQW', so every 128bit, the buffer is automatically written
+      // to the flash
+      int* nvm_addr = (int*)(dfu_addr);
+      int* ram_addr = (int*)udc_ctrl_out_buf;
+      for (unsigned i = 0; i < DFU_TRANSFER_SIZE / sizeof(uint32_t); i++) {
+        *nvm_addr++ = *ram_addr++;
+      }
+#else
+      // write 64 bytes (32 * 2)
       uint16_t* nvm_addr = (uint16_t*)(dfu_addr);
       uint16_t* ram_addr = (uint16_t*)udc_ctrl_out_buf;
-      for (unsigned i = 0; i < 32; i++)
-      { *nvm_addr++ = *ram_addr++; }
-#ifdef __SAME54N19A__
-      while (!NVMCTRL->INTFLAG.bit.DONE);
-#else
+      for (unsigned i = 0; i < DFU_TRANSFER_SIZE / sizeof(uint16_t); i++) {
+        *nvm_addr++ = *ram_addr++;
+      }
       while (!NVMCTRL->INTFLAG.bit.READY);
 #endif
-
       udc_control_send_zlp();
       dfu_addr = 0;
     }
@@ -337,8 +360,8 @@ static bool flash_valid()
   // sp needs to point somewhere inside the RAM
   // ip needs to point into the flash
   return     sp > 0x20000000
-             && ip >= 0x00001000
-             && ip <  0x00400000;
+             && ip >= FLASH_FW_ADDR
+             && ip <  FLASH_TOTAL_SIZE;
 }
 
 
@@ -373,6 +396,14 @@ run_bootloader:
   // startup i2c
   i2c_setup();
 #endif
+
+  // configure NVM to automatically commit the page buffer
+#ifdef __SAME54N19A__
+  NVMCTRL->CTRLA.bit.WMODE = NVMCTRL_CTRLA_WMODE_AQW_Val;
+#else
+  NVMCTRL->CTRLB.bit.RWS = 2;
+#endif
+
 
   //  initialize USB
   pin_mux(PIN_DP);

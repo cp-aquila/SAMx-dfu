@@ -31,8 +31,6 @@
 #include "usb.h"
 #include "usb_descriptors.h"
 
-#define DFU_TRANSFER_SIZE 64
-
 /*- Variables ---------------------------------------------------------------*/
 usb_device_descriptor_t usb_device_descriptor __attribute__((aligned(4))) =   /* MUST BE IN RAM for USB peripheral */
 {

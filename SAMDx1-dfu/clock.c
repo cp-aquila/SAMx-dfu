@@ -53,7 +53,6 @@ void gclk_init()
 {
   // Initialize GCLK
 #ifdef __SAME54N19A__
-  NVMCTRL->CTRLA.bit.RWS = 2;
   MCLK->APBAMASK.reg |= MCLK_APBAMASK_GCLK;
   GCLK->CTRLA.reg = GCLK_CTRLA_SWRST;
   while (GCLK->CTRLA.reg & GCLK_CTRLA_SWRST);
@@ -62,7 +61,6 @@ void gclk_init()
   // Various bits in the INTFLAG register can be set to one at startup.
   SYSCTRL->INTFLAG.reg = SYSCTRL_INTFLAG_BOD33RDY | SYSCTRL_INTFLAG_BOD33DET |  SYSCTRL_INTFLAG_DFLLRDY;
 
-  NVMCTRL->CTRLB.bit.RWS = 2;
   PM->APBAMASK.reg |= PM_APBAMASK_GCLK;
   GCLK->CTRL.reg = GCLK_CTRL_SWRST;
   while (GCLK->CTRL.reg & GCLK_CTRL_SWRST);

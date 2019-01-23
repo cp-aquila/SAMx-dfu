@@ -39,6 +39,8 @@ enum
   USB_STR_ZERO,
 };
 
+#define DFU_TRANSFER_SIZE 64
+
 /*- Types -------------------------------------------------------------------*/
 typedef struct PACK
 {

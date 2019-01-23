@@ -1,13 +1,14 @@
 #ifndef _PERIPHERALS_H_
 #define _PERIPHERALS_H_
 
-const static Pin PIN_VBUS = {.group = 0, .pin = 13, .mux = MUX_PA13A_EIC_EXTINT13 };
 #ifdef __SAME54N19A__
+const static Pin PIN_VBUS = {.group = 0, .pin = 21, .mux = 0 };
 const static Pin PIN_DP   = {.group = 0, .pin = 25, .mux = MUX_PA25H_USB_DP };
 const static Pin PIN_DM   = {.group = 0, .pin = 24, .mux = MUX_PA24H_USB_DM };
 const static Pin PIN_LEDR = {.group = 0, .pin = 01, .mux = MUX_PA01A_EIC_EXTINT1 };
 const static Pin PIN_LEDG = {.group = 0, .pin = 00, .mux = MUX_PA00A_EIC_EXTINT0 };
 #else
+const static Pin PIN_VBUS = {.group = 0, .pin = 13, .mux = MUX_PA13A_EIC_EXTINT13 };
 const static Pin PIN_DP   = {.group = 0, .pin = 25, .mux = MUX_PA25G_USB_DP };
 const static Pin PIN_DM   = {.group = 0, .pin = 24, .mux = MUX_PA24G_USB_DM };
 #endif
