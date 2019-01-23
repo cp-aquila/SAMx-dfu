@@ -13,7 +13,7 @@
     <OutputFileExtension>.elf</OutputFileExtension>
     <OutputDirectory>$(MSBuildProjectDirectory)\$(Configuration)</OutputDirectory>
     <AssemblyName>SAMDx1-dfu</AssemblyName>
-    <Name>SAMDx1-dfu</Name>
+    <Name>SAMx-dfu</Name>
     <RootNamespace>SAMDx1-dfu</RootNamespace>
     <ToolchainFlavour>Native</ToolchainFlavour>
     <KeepTimersRunning>true</KeepTimersRunning>
