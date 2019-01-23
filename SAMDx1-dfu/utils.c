@@ -65,12 +65,9 @@ void delay_cycles(uint32_t cy)
 void jump_to_flash(uint32_t addr_p, uint32_t r0_val)
 {
   uint32_t* addr = (void*) addr_p;
-  __disable_irq();
 
   // Disable SysTick
   SysTick->CTRL = 0;
-
-  // TODO: reset peripherals
 
   // Switch to the the interrupt vector table in flash
   SCB->VTOR = (uint32_t) addr;
