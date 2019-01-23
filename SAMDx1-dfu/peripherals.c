@@ -162,7 +162,11 @@ void i2c_cleanup(void)
   SERCOM1->SPI.CTRLA.reg = SERCOM_SPI_CTRLA_SWRST;
   while (SERCOM1->SPI.CTRLA.reg & SERCOM_SPI_CTRLA_SWRST);
 }
-
+#ifdef __SAME54N19A__
+bool usb_dongle_present(void) {
+  return false;
+}
+#else
 bool usb_dongle_present(void)
 {
   bool dm, dp, vb;
@@ -202,3 +206,4 @@ bool usb_dongle_present(void)
   pin_in(PIN_DM);
   return true;
 }
+#endif
