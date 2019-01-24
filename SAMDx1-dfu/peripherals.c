@@ -153,12 +153,23 @@ void i2c_setup(void)
   i2c_mcp_data(MCP23008_REG_IODIR, 0x00);
 }
 
-void i2c_cleanup(void)
+void do_cleanup(void)
 {
-  // reset module
+  // reset I2C module
   SERCOM1->SPI.CTRLA.reg = SERCOM_SPI_CTRLA_SWRST;
   while (SERCOM1->SPI.CTRLA.reg & SERCOM_SPI_CTRLA_SWRST);
+  // reset SPI module
+  SERCOM_MODULE->SPI.CTRLA.reg = SERCOM_SPI_CTRLA_SWRST;
+  while (SERCOM_MODULE->SPI.CTRLA.reg & SERCOM_SPI_CTRLA_SWRST);
+
+  // disable NVM auto write
+#ifdef __SAME54N19A__
+  NVMCTRL->CTRLA.bit.WMODE = NVMCTRL_CTRLA_WMODE_MAN;
+#else
+  NVMCTRL->CTRLB.bit.MANW = 1;
+#endif
 }
+
 #ifdef __SAME54N19A__
 bool usb_dongle_present(void)
 {
@@ -263,14 +274,6 @@ void spi_flash_setup(void)
                                     | SERCOM_SPI_CTRLA_DOPO(SERCOM_DOPO);
 }
 
-
-void spi_flash_cleanup(void)
-{
-  // reset module
-  SERCOM_MODULE->SPI.CTRLA.reg = SERCOM_SPI_CTRLA_SWRST;
-  while (SERCOM_MODULE->SPI.CTRLA.reg & SERCOM_SPI_CTRLA_SWRST);
-
-}
 
 uint8_t spi_flash_transfer_byte(uint8_t mosi)
 {

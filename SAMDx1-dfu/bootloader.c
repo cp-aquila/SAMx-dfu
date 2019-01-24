@@ -409,6 +409,7 @@ run_bootloader:
 #ifdef __SAME54N19A__
   NVMCTRL->CTRLA.bit.WMODE = NVMCTRL_CTRLA_WMODE_AQW_Val;
 #else
+  NVMCTRL->CTRLB.bit.MANW = 0;
   NVMCTRL->CTRLB.bit.RWS = 2;
 #endif
 
@@ -446,7 +447,7 @@ run_bootloader:
     USB_Service();
     if (dfu_done == 1) {
       if (cnt2++ == 5 * LED_BLINK_CYCLES) {
-        i2c_cleanup();
+        do_cleanup();
         USB->DEVICE.CTRLA.reg &= !USB_CTRLA_ENABLE;
         jump_to_flash(FLASH_FW_ADDR, 0);
       }

@@ -40,8 +40,11 @@ const static Pin PIN_CS  =  {.group = 1, .pin = 2,  .mux = 0 };
 
 void i2c_led_toggle(void);
 void i2c_setup(void);
-void i2c_cleanup(void);
 
+bool spi_flash_check(void);
+void spi_flash_read(int addr, uint8_t* buf, size_t size);
+
+void do_cleanup(void);
 bool usb_dongle_present(void);
 
 #endif
