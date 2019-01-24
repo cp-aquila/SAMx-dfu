@@ -209,9 +209,6 @@
     <None Include="Device_Startup\bootloader_flash.ld">
       <SubType>compile</SubType>
     </None>
-    <None Include="SAMDx1-dfu.componentinfo.xml">
-      <SubType>compile</SubType>
-    </None>
   </ItemGroup>
   <ItemGroup>
     <Folder Include="Device_Startup" />
