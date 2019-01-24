@@ -395,6 +395,14 @@ run_bootloader:
 #else
   // startup i2c
   i2c_setup();
+
+  // setup spi flash
+  spi_flash_setup();
+  if (spi_flash_check() == true) {
+    // TODO: read external flash, check signature/checksum
+    // when okay, write external to internal flash
+    //spi_flash_read(0, buf, sizeof(buf));
+  }
 #endif
 
   // configure NVM to automatically commit the page buffer

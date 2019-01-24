@@ -21,9 +21,6 @@ static uint8_t mcp23008_gpio_val;
 #define MCP23008_BIT_PWR         (6)
 #define MCP23008_BIT_PWR_STB     (7)
 
-#define GCLK_SERCOM1_CORE 0x15
-#define GCLK_SERCOMx_SLOW 0x13
-
 static bool i2c_master_wait_for_bus(void)
 {
   // Wait for reply.
@@ -108,9 +105,9 @@ void i2c_setup(void)
   PM->APBCMASK.reg |= 1 << (PM_APBCMASK_SERCOM1_Pos);
 
   // attach sercom slow clock to generator 1 (32kHz)
-  GCLK->CLKCTRL.reg = GCLK_CLKCTRL_ID(GCLK_SERCOMx_SLOW) | GCLK_CLKCTRL_CLKEN | GCLK_CLKCTRL_GEN(1);
+  GCLK->CLKCTRL.reg = GCLK_CLKCTRL_ID(0x13) | GCLK_CLKCTRL_CLKEN | GCLK_CLKCTRL_GEN(1);
   // attach sercom1 clock to generator 0 (48Mhz)
-  GCLK->CLKCTRL.reg = GCLK_CLKCTRL_ID(GCLK_SERCOM1_CORE) | GCLK_CLKCTRL_CLKEN | GCLK_CLKCTRL_GEN(0);
+  GCLK->CLKCTRL.reg = GCLK_CLKCTRL_ID(0x15) | GCLK_CLKCTRL_CLKEN | GCLK_CLKCTRL_GEN(0);
 #endif
 
   // reset module
@@ -163,7 +160,8 @@ void i2c_cleanup(void)
   while (SERCOM1->SPI.CTRLA.reg & SERCOM_SPI_CTRLA_SWRST);
 }
 #ifdef __SAME54N19A__
-bool usb_dongle_present(void) {
+bool usb_dongle_present(void)
+{
   return false;
 }
 #else
@@ -207,3 +205,114 @@ bool usb_dongle_present(void)
   return true;
 }
 #endif
+
+static inline void spi_flash_wait_for_sync()
+{
+  while (SERCOM_MODULE->SPI.SYNCBUSY.reg & SERCOM_SPI_SYNCBUSY_MASK) {
+  }
+}
+
+
+void spi_flash_setup(void)
+{
+  // set pin muxes
+  pin_mux(PIN_MISO);
+  pin_mux(PIN_MOSI);
+  pin_mux(PIN_SCK);
+  pin_out(PIN_CS);
+  pin_high(PIN_CS);
+
+#if __SAME54N19A__
+  MCLK->APBDMASK.reg |= 1 << (MCLK_APBDMASK_SERCOM4_Pos);
+  //GCLK_SERCOM4_CORE == 34 (table 14-9)
+  GCLK->PCHCTRL[34].reg = GCLK_PCHCTRL_GEN_GCLK0 | GCLK_PCHCTRL_CHEN;
+  //GCLK_SERCOMx_SLOW == 3 (table 14-9)
+  GCLK->PCHCTRL[3].reg = GCLK_PCHCTRL_GEN_GCLK1 | GCLK_PCHCTRL_CHEN;
+#else
+  // turn on clock to module
+  PM->APBCMASK.reg |= 1 << (PM_APBCMASK_SERCOM5_Pos);
+
+  // attach SERCOM_MODULE clock to generator 0 (48Mhz)
+  GCLK->CLKCTRL.reg = GCLK_CLKCTRL_ID(GCLK_SERCOM5_CORE) | GCLK_CLKCTRL_CLKEN | GCLK_CLKCTRL_GEN(0);
+#endif
+
+  // reset module
+  SERCOM_MODULE->SPI.CTRLA.reg = SERCOM_SPI_CTRLA_SWRST;
+  while (SERCOM_MODULE->SPI.CTRLA.reg & SERCOM_SPI_CTRLA_SWRST);
+
+  // configure as master
+  spi_flash_wait_for_sync();
+  SERCOM_MODULE->SPI.CTRLA.reg = SERCOM_SPI_CTRLA_MODE(3);
+
+  // configure CTRLB
+  spi_flash_wait_for_sync();
+  SERCOM_MODULE->SPI.CTRLB.reg  = SERCOM_SPI_CTRLB_RXEN
+                                  | SERCOM_SPI_CTRLB_SSDE;
+
+  // set baud rate
+  spi_flash_wait_for_sync();
+  SERCOM_MODULE->SPI.BAUD.reg = SERCOM_BAUD_VAL;
+
+  // configure CTRLA
+  spi_flash_wait_for_sync();
+  SERCOM_MODULE->SPI.CTRLA.reg    = SERCOM_SPI_CTRLA_ENABLE
+                                    | SERCOM_SPI_CTRLA_MODE(3)
+                                    | (SERCOM_SPI_CTRLA_CPOL)
+                                    | (SERCOM_SPI_CTRLA_CPHA)
+                                    | SERCOM_SPI_CTRLA_DIPO(SERCOM_DIPO)
+                                    | SERCOM_SPI_CTRLA_DOPO(SERCOM_DOPO);
+}
+
+
+void spi_flash_cleanup(void)
+{
+  // reset module
+  SERCOM_MODULE->SPI.CTRLA.reg = SERCOM_SPI_CTRLA_SWRST;
+  while (SERCOM_MODULE->SPI.CTRLA.reg & SERCOM_SPI_CTRLA_SWRST);
+
+}
+
+uint8_t spi_flash_transfer_byte(uint8_t mosi)
+{
+  // wait until we can write a byte
+  while (SERCOM_MODULE->SPI.INTFLAG.bit.DRE != 1) {}
+  SERCOM_MODULE->SPI.DATA.reg = mosi;
+  // wait until we can read a byte
+  while (SERCOM_MODULE->SPI.INTFLAG.bit.RXC != 1) {}
+  return (SERCOM_MODULE->SPI.DATA.reg);
+}
+
+void spi_flash_read(int addr, uint8_t* buf, size_t size)
+{
+  pin_low(PIN_CS);
+  delay_cycles(10);
+  spi_flash_transfer_byte(0x03);
+  spi_flash_transfer_byte((uint8_t)(addr >> 16));
+  spi_flash_transfer_byte((uint8_t)(addr >> 8));
+  spi_flash_transfer_byte((uint8_t)(addr >> 0));
+  // 0x03 + 3x address byte,
+  // get bytes
+  for (int i = 0; i < size; i++) {
+    *buf++ = spi_flash_transfer_byte(0x00);
+  }
+  pin_high(PIN_CS);
+  delay_cycles(10);
+}
+
+bool spi_flash_check(void)
+{
+  pin_low(PIN_CS);
+  delay_cycles(10);
+  // send read command
+  spi_flash_transfer_byte(0x9F);
+  uint8_t mi =  spi_flash_transfer_byte(0xAA);
+  uint8_t di1 = spi_flash_transfer_byte(0xAA);
+  uint8_t di2 = spi_flash_transfer_byte(0xAA);
+  pin_high(PIN_CS);
+  delay_cycles(10);
+#if __SAME54N19A__
+  return ((mi == 0x1f) && (di1 == 0x85) && (di2 == 0x01));
+#else
+  return ((mi == 0x1f) && (di1 == 0x24) && (di2 == 0x00));
+#endif
+}
