@@ -378,7 +378,7 @@ static bool wdt_reset_entry_condition(void)
 
 void bootloader(void)
 {
-  if (!flash_valid() || usb_dongle_present() || wdt_reset_entry_condition()) {
+  if (wdt_reset_entry_condition() || !flash_valid() || usb_dongle_present()) {
     goto run_bootloader;
   }
   jump_to_flash(FLASH_FW_ADDR, 0);
@@ -447,9 +447,13 @@ run_bootloader:
     USB_Service();
     if (dfu_done == 1) {
       if (cnt2++ == 5 * LED_BLINK_CYCLES) {
-        do_cleanup();
-        USB->DEVICE.CTRLA.reg &= !USB_CTRLA_ENABLE;
-        jump_to_flash(FLASH_FW_ADDR, 0);
+        // request reset via AIRCR register of the system control block
+        // this works for both cortex-M0+ and cortex-M4
+        // https://static.docs.arm.com/ddi0419/d/DDI0419D_armv6m_arm.pdf
+        uint32_t *AIRCR = (uint32_t*)(0xE000ED0C);
+        // write VECTKEY and SYSRESETREQ
+        *AIRCR = (0x05FA << 16) + 4;
+        while(1) {}
       }
     }
     if (cnt++ == LED_BLINK_CYCLES) {
