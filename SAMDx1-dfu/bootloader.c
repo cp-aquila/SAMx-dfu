@@ -59,7 +59,8 @@ NOTES:
 #define FLASH_TOTAL_SIZE (0x00400000)
 #endif
 #define FLASH_FW_ADDR   FLASH_BOOT_SIZE
-#define LED_BLINK_CYCLES 40000UL
+#define LED_BLINK_MS    100UL
+#define DFU_RESET_MS    250UL // wait this long after completion of the firmware download until the device is reset
 
 
 /*- Types -------------------------------------------------------------------*/
@@ -69,7 +70,7 @@ typedef struct {
 } udc_mem_t;
 
 /*- Variables ---------------------------------------------------------------*/
-static uint32_t dfu_done = 0;
+static uint32_t dfu_done_ts = 0;
 static uint32_t usb_config = 0;
 static uint32_t dfu_status_choices[6] = {
   0x00000000, 0x00000002, /* normal */
@@ -80,6 +81,7 @@ static uint32_t dfu_status_choices[6] = {
 static udc_mem_t udc_mem[USB_EPT_NUM];
 static uint32_t udc_ctrl_in_buf[16];
 static uint32_t udc_ctrl_out_buf[16];
+static uint32_t systick_time_ms;
 
 __attribute__((section(".version")))
 __attribute__((used))
@@ -333,7 +335,7 @@ static void USB_Service(void)
               // zero length packet, end of download
               dfu_status = dfu_status_choices + 4;
               dfu_addr = 0;
-              dfu_done = 1;
+              dfu_done_ts = systick_time_ms;
             }
           // fall through to below
           case DFU_UPLOAD:
@@ -388,10 +390,7 @@ run_bootloader:
   clock_init_crystal(GCLK_SYSTEM, 1);
 
 #ifdef __SAME54N19A__
-  pin_out(PIN_LEDR);
-  pin_out(PIN_LEDG);
-  pin_low(PIN_LEDR);
-  pin_high(PIN_LEDG);
+  apa102_led_setup();
 #else
   // startup i2c
   i2c_setup();
@@ -415,8 +414,8 @@ run_bootloader:
 
 
   //  initialize USB
-  pin_mux(PIN_DP);
-  pin_mux(PIN_DM);
+  pin_mux(PIN_USB_DP);
+  pin_mux(PIN_USB_DM);
 #ifdef __SAME54N19A__
   MCLK->APBBMASK.reg |= MCLK_APBBMASK_USB;
   //GCLK_USB == 10 (table 14-9)
@@ -442,28 +441,39 @@ run_bootloader:
   USB->DEVICE.CTRLA.reg |= USB_CTRLA_ENABLE;
 
   // service USB
-  int cnt = 0, cnt2 = 0;
+  uint32_t last_blink = systick_time_ms;
+  uint32_t shitty_counter = 0;
   while (1)  {
+    // 'emulate' systick counter
+    if (shitty_counter++ == 600) {
+      systick_time_ms++;
+      shitty_counter = 0;
+    }
+
+    // do all the usb magic
     USB_Service();
-    if (dfu_done == 1) {
-      if (cnt2++ == 5 * LED_BLINK_CYCLES) {
+
+    // check if we want to reset
+    if (dfu_done_ts != 0) {
+      if (systick_time_ms > dfu_done_ts + 250) {
         // request reset via AIRCR register of the system control block
         // this works for both cortex-M0+ and cortex-M4
         // https://static.docs.arm.com/ddi0419/d/DDI0419D_armv6m_arm.pdf
-        uint32_t *AIRCR = (uint32_t*)(0xE000ED0C);
+        uint32_t* AIRCR = (uint32_t*)(0xE000ED0C);
         // write VECTKEY and SYSRESETREQ
         *AIRCR = (0x05FA << 16) + 4;
-        while(1) {}
+        while (1) {}
       }
     }
-    if (cnt++ == LED_BLINK_CYCLES) {
+
+    // blink some leds
+    if (systick_time_ms > last_blink + LED_BLINK_MS) {
+      last_blink = systick_time_ms;
 #ifdef __SAME54N19A__
-      pin_toggle(PIN_LEDR);
-      pin_toggle(PIN_LEDG);
+      apa102_led_toggle();
 #else
       i2c_led_toggle();
 #endif
-      cnt = 0;
     }
   }
   static char str[] = "123456789";
