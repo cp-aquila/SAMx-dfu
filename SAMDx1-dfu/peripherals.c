@@ -246,7 +246,13 @@ void do_cleanup(void)
 #ifdef __SAME54N19A__
 bool usb_dongle_present(void)
 {
-  return false;
+  pin_pull_up(PIN_SW2);
+  pin_in(PIN_SW2);
+  // the pull-up is slow, it takes ~8ms to get up to 2.8V
+  // the input threshold is 2.31V (0.7 * 3.3V)
+  delay_ms(8);
+  uint8_t p = pin_read(PIN_SW2);
+  return (p == 0);
 }
 #else
 bool usb_dongle_present(void)

@@ -13,6 +13,7 @@ const static Pin PIN_FLASH_SCK  = {.group = 1, .pin = 9,  .mux = MUX_PB09D_SERCO
 const static Pin PIN_FLASH_CS   = {.group = 1, .pin = 10, .mux = 0 };
 const static Pin PIN_APA_MOSI   = {.group = 0, .pin = 0,  .mux = MUX_PA00D_SERCOM1_PAD0 };
 const static Pin PIN_APA_SCK    = {.group = 0, .pin = 1,  .mux = MUX_PA01D_SERCOM1_PAD1 };
+const static Pin PIN_SW2        = {.group = 1, .pin = 31, .mux = 0 };
 
 static const uint8_t apa102_led_s0[16] = {0, 0, 0, 0, 0xFF, 0x00, 0x00, 0xFF, 0xFF, 0x00, 0xFF, 0x00, 0xFF, 0xFF, 0xFF, 0xFF};
 static const uint8_t apa102_led_s1[16] = {0, 0, 0, 0, 0xFF, 0x00, 0xFF, 0x00, 0xFF, 0x00, 0x00, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF};
