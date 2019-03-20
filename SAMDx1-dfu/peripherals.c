@@ -254,7 +254,7 @@ bool usb_dongle_present(void)
   bool dm, dp, vb;
 
   pin_in(PIN_USB_VBUS);
-  delay_cycles(100);
+  delay_8_cycles(100);
   vb = pin_read(PIN_USB_VBUS);
   if (vb == true) {
     // there is power on VBUS. better stop right here
@@ -265,7 +265,7 @@ bool usb_dongle_present(void)
   pin_out(PIN_USB_DP);
   pin_low(PIN_USB_DP);
   pin_pull_up(PIN_USB_DM);
-  delay_cycles(100);
+  delay_8_cycles(100);
   dm = pin_read(PIN_USB_DM);
   dp = pin_read(PIN_USB_DP);
   if ((dm == true) || (dp == true)) {
@@ -276,7 +276,7 @@ bool usb_dongle_present(void)
   pin_out(PIN_USB_DM);
   pin_low(PIN_USB_DM);
   pin_pull_up(PIN_USB_DP);
-  delay_cycles(100);
+  delay_8_cycles(100);
   dm = pin_read(PIN_USB_DM);
   dp = pin_read(PIN_USB_DP);
   if ((dm == true) || (dp == true)) {
@@ -344,7 +344,7 @@ void spi_flash_setup(void)
 void spi_flash_read(int addr, uint8_t* buf, size_t size)
 {
   pin_low(PIN_FLASH_CS);
-  delay_cycles(10);
+  delay_us(1);
   spi_transfer_byte(FLASH_SERCOM_MODULE, 0x03);
   spi_transfer_byte(FLASH_SERCOM_MODULE, (uint8_t)(addr >> 16));
   spi_transfer_byte(FLASH_SERCOM_MODULE, (uint8_t)(addr >> 8));
@@ -355,20 +355,21 @@ void spi_flash_read(int addr, uint8_t* buf, size_t size)
     *buf++ = spi_transfer_byte(FLASH_SERCOM_MODULE, 0x00);
   }
   pin_high(PIN_FLASH_CS);
-  delay_cycles(10);
+  delay_us(1);
 }
 
 bool spi_flash_check(void)
 {
   pin_low(PIN_FLASH_CS);
-  delay_cycles(10);
+  delay_us(1);
+
   // send read command
   spi_transfer_byte(FLASH_SERCOM_MODULE, 0x9F);
   uint8_t mi =  spi_transfer_byte(FLASH_SERCOM_MODULE, 0xAA);
   uint8_t di1 = spi_transfer_byte(FLASH_SERCOM_MODULE, 0xAA);
   uint8_t di2 = spi_transfer_byte(FLASH_SERCOM_MODULE, 0xAA);
   pin_high(PIN_FLASH_CS);
-  delay_cycles(10);
+  delay_us(1);
 
   // we have different flash chips :)
 #if __SAME54N19A__

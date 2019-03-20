@@ -20,43 +20,67 @@ void pin_mux(Pin p)
   PORT->Group[p.group].PINCFG[p.pin].bit.PMUXEN = 1;
 }
 
-void pin_out(Pin p) {
+void pin_out(Pin p)
+{
   PORT->Group[p.group].PINCFG[p.pin].bit.PMUXEN = 0;
-  PORT->Group[p.group].DIRSET.reg = (1<<p.pin);
+  PORT->Group[p.group].DIRSET.reg = (1 << p.pin);
 }
 
-void pin_low(Pin p) {
-  PORT->Group[p.group].OUTCLR.reg = (1<<p.pin);
+void pin_low(Pin p)
+{
+  PORT->Group[p.group].OUTCLR.reg = (1 << p.pin);
 }
 
-void pin_toggle(Pin p) {
-  PORT->Group[p.group].OUTTGL.reg = (1<<p.pin);
+void pin_toggle(Pin p)
+{
+  PORT->Group[p.group].OUTTGL.reg = (1 << p.pin);
 }
 
-void pin_high(Pin p) {
-  PORT->Group[p.group].OUTSET.reg = (1<<p.pin);
+void pin_high(Pin p)
+{
+  PORT->Group[p.group].OUTSET.reg = (1 << p.pin);
 }
 
-void pin_in(Pin p) {
+void pin_in(Pin p)
+{
   PORT->Group[p.group].PINCFG[p.pin].bit.PMUXEN = 0;
   PORT->Group[p.group].PINCFG[p.pin].bit.INEN = 1;
-  PORT->Group[p.group].DIRCLR.reg = (1<<p.pin);
+  PORT->Group[p.group].DIRCLR.reg = (1 << p.pin);
 }
 
-void pin_pull_up(Pin p) {
+void pin_pull_up(Pin p)
+{
   PORT->Group[p.group].PINCFG[p.pin].bit.PMUXEN = 0;
   PORT->Group[p.group].PINCFG[p.pin].bit.PULLEN = 1;
   pin_high(p);
 }
 
-bool pin_read(Pin p) {
-  return (PORT->Group[p.group].IN.reg & (1<<p.pin)) != 0;
+bool pin_read(Pin p)
+{
+  return (PORT->Group[p.group].IN.reg & (1 << p.pin)) != 0;
 }
 
-void delay_cycles(uint32_t cy)
+void delay_8_cycles(uint32_t cy)
 {
+  // when compiled with -O3 and -g3 this loop takes
+  // 8 instructions for one iteration
+  // subne
+  // nopeq
+  // nopeq
+  // nopeq
+  // nopeq
+  // b
+  // cmp
+  // bhi
+  cy = cy / 8;
   while (cy > 1) {
     cy--;
+    // we need this nop, otherwise the optimizer
+    // will throw the whole thing away since it has no side effects
+    asm("nop");
+    asm("nop");
+    asm("nop");
+    asm("nop");
   }
   return;
 }

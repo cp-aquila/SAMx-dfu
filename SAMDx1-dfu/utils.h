@@ -70,7 +70,13 @@ void pin_in(Pin p);
 void pin_pull_up(Pin p);
 bool pin_read(Pin p);
 
-void delay_cycles(uint32_t cy);
+void delay_8_cycles(uint32_t cy);
+
+// __SAME54N19A__
+// the Device runs with 48Mhz after power-up (see section 7.3.2)
+// During Bootloader-Operation the Main-Clock also runs at 48Mhz
+#define delay_ms(ms) delay_8_cycles(ms * 48000)
+#define delay_us(ms) delay_8_cycles(ms * 48)
 
 void jump_to_flash(uint32_t addr_p, uint32_t r0_val);
 
