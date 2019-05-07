@@ -1,4 +1,8 @@
 Release
 Debug
+R21-Debug
+R21-Release
+E54-Debug
+E54-Release
 boot
 atmel_devices_cdc.*
