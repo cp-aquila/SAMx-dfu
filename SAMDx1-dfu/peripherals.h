@@ -57,6 +57,7 @@ void i2c_setup(void);
 void apa102_led_toggle(void);
 void apa102_led_setup(void);
 
+void spi_flash_setup(void);
 bool spi_flash_check(void);
 void spi_flash_read(int addr, uint8_t* buf, size_t size);
 

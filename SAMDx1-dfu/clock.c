@@ -67,7 +67,7 @@ void gclk_init()
 #endif
 }
 
-void clock_init_crystal(uint8_t clk_system, uint8_t clk_32k)
+void clock_init_crystal(void)
 {
   gclk_init();
 
@@ -75,11 +75,11 @@ void clock_init_crystal(uint8_t clk_system, uint8_t clk_32k)
   // configure XOSC1 for 12Mhz XTAL Operation
   OSCCTRL->XOSCCTRL[1].reg = OSCCTRL_XOSCCTRL_ENABLE | OSCCTRL_XOSCCTRL_XTALEN |  OSCCTRL_XOSCCTRL_IPTAT(3) | OSCCTRL_XOSCCTRL_IMULT(4) | OSCCTRL_XOSCCTRL_CFDPRESC(3);
   while (!(OSCCTRL->STATUS.reg & OSCCTRL_STATUS_XOSCRDY1));
-  // configure DPLL0 with GCLK1 source, output 48Mhz
+  // configure DPLL0 with XOSC1 source, output 48Mhz
   OSCCTRL->Dpll[0].DPLLCTRLB.reg = OSCCTRL_DPLLCTRLB_REFCLK_XOSC1 | OSCCTRL_DPLLCTRLB_DIV(2); // effective divider 6 (28.8.14)
   OSCCTRL->Dpll[0].DPLLRATIO.reg = OSCCTRL_DPLLRATIO_LDR(23); // effective multiplier 24
   OSCCTRL->Dpll[0].DPLLCTRLA.reg = OSCCTRL_DPLLCTRLA_ENABLE;
-  while (!(OSCCTRL->Dpll[0].DPLLSTATUS.reg & OSCCTRL_DPLLSTATUS_LOCK));
+  while (!(OSCCTRL->Dpll[0].DPLLSTATUS.reg & OSCCTRL_DPLLSTATUS_LOCK)) {};
 
   // run GCLK0 (48MHz)
   gclk_enable(0, GCLK_GENCTRL_SRC_DPLL0, 1);
@@ -97,10 +97,10 @@ void clock_init_crystal(uint8_t clk_system, uint8_t clk_32k)
   while (!SYSCTRL->PCLKSR.bit.XOSC32KRDY);
 
 
-  gclk_enable(clk_32k, GCLK_SOURCE_XOSC32K, 1);
+  gclk_enable(1, GCLK_SOURCE_XOSC32K, 1);
 
   GCLK->CLKCTRL.reg = GCLK_CLKCTRL_CLKEN |
-                      GCLK_CLKCTRL_GEN(clk_32k) |
+                      GCLK_CLKCTRL_GEN(1) |
                       GCLK_CLKCTRL_ID(SYSCTRL_GCLK_ID_DFLL48);
 
   SYSCTRL->DFLLCTRL.reg = SYSCTRL_DFLLCTRL_ENABLE;
@@ -115,8 +115,7 @@ void clock_init_crystal(uint8_t clk_system, uint8_t clk_32k)
   SYSCTRL->DFLLCTRL.reg = SYSCTRL_DFLLCTRL_ENABLE | SYSCTRL_DFLLCTRL_MODE;
   dfll_wait_for_sync();
   SYSCTRL->DFLLCTRL.reg = SYSCTRL_DFLLCTRL_ENABLE | SYSCTRL_DFLLCTRL_MODE | SYSCTRL_DFLLCTRL_ONDEMAND;
-
-  gclk_enable(clk_system, GCLK_SOURCE_DFLL48M, 1);
+  gclk_enable(0, GCLK_SOURCE_DFLL48M, 1);
   while (GCLK->STATUS.bit.SYNCBUSY);
 #endif
 }

@@ -316,7 +316,7 @@ void spi_flash_setup(void)
   PM->APBCMASK.reg |= 1 << (PM_APBCMASK_SERCOM5_Pos);
 
   // attach SERCOM_MODULE clock to generator 0 (48Mhz)
-  GCLK->CLKCTRL.reg = GCLK_CLKCTRL_ID(GCLK_SERCOM5_CORE) | GCLK_CLKCTRL_CLKEN | GCLK_CLKCTRL_GEN(0);
+  GCLK->CLKCTRL.reg = GCLK_CLKCTRL_ID_SERCOM5_CORE | GCLK_CLKCTRL_CLKEN | GCLK_CLKCTRL_GEN(0);
 #endif
 
   // reset module

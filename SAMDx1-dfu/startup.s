@@ -70,7 +70,7 @@ zero_loop:
   stm r1!, {r2}
   cmp r1, r0
   bcc zero_loop
-
+mainentry:
   bl bootloader
 
 loop:

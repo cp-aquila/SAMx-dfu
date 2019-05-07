@@ -50,7 +50,6 @@ NOTES:
 /*- Definitions -------------------------------------------------------------*/
 #define USB_CMD(dir, rcpt, type) ((USB_##dir##_TRANSFER << 7) | (USB_##type##_REQUEST << 5) | (USB_##rcpt##_RECIPIENT << 0))
 #define SIMPLE_USB_CMD(rcpt, type) ((USB_##type##_REQUEST << 5) | (USB_##rcpt##_RECIPIENT << 0))
-#define GCLK_SYSTEM 0
 #ifdef __SAME54N19A__
 #define FLASH_BOOT_SIZE (8192) // minimum size of boot block
 #define FLASH_TOTAL_SIZE (0x00800000)
@@ -386,32 +385,33 @@ void bootloader(void)
   jump_to_flash(FLASH_FW_ADDR, 0);
 
 run_bootloader:
-  // configure system to run on external XTAL
-  clock_init_crystal(GCLK_SYSTEM, 1);
-
-#ifdef __SAME54N19A__
-  apa102_led_setup();
-#else
-  // startup i2c
-  i2c_setup();
-
-  // setup spi flash
-  spi_flash_setup();
-  if (spi_flash_check() == true) {
-    // TODO: read external flash, check signature/checksum
-    // when okay, write external to internal flash
-    //spi_flash_read(0, buf, sizeof(buf));
-  }
-#endif
-
   // configure NVM to automatically commit the page buffer
 #ifdef __SAME54N19A__
   NVMCTRL->CTRLA.bit.WMODE = NVMCTRL_CTRLA_WMODE_AQW_Val;
 #else
   NVMCTRL->CTRLB.bit.MANW = 0;
+  // also set the flash-read-wait
   NVMCTRL->CTRLB.bit.RWS = 2;
 #endif
 
+  // configure system to run on external XTAL
+  clock_init_crystal();
+
+#ifdef __SAME54N19A__
+  apa102_led_setup();
+#else
+  // setup spi flash
+  spi_flash_setup();
+  if (spi_flash_check() == true) {
+    // TODO: read external flash, check signature/checksum
+    // when okay, write external to internal flash
+    uint8_t buf[32];
+    spi_flash_read(0, buf, sizeof(buf));
+  }
+
+  // startup i2c
+  i2c_setup();
+#endif
 
   //  initialize USB
   pin_mux(PIN_USB_DP);
