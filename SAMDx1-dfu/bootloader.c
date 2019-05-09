@@ -116,8 +116,8 @@ static void udc_control_send_zlp(void)
   udc_control_send(NULL, 0); /* peripheral can't read from NULL address, but size is zero and this value takes less space to compile */
 }
 
-#define USB_STRING_MAX_LEN (16 * 2) // 16 chars for a 64bit mac address without columns
-#define USB_STRING_PLACEHOLDER "                                  "
+#define USB_STRING_MAX_LEN (32 * 2) // 32 chars for a 128bit uuid without columns
+#define USB_STRING_PLACEHOLDER "                                                                    "
 usb_string_descriptor usb_string_g __attribute__((aligned(4))) = {
   .bLength = USB_STRING_MAX_LEN,
   .bDescriptorType = USB_STRING_DESCRIPTOR,
@@ -140,14 +140,15 @@ static void usb_send_string(const char* text, uint32_t len)
 
 static void usb_send_serial(uint32_t len)
 {
-  ee_data_t* e = (ee_data_t*)0x804008;
-  usb_string_g.bLength = 34;
-  for (int i = 0; i < 16; i += 2) {
-    uint8_t b = e->ieee_address[i / 2];
-    usb_string_g.bString[i * 2 + 0] = "0123456789ABCDEF"[b >> 4 & 0x0F];
-    usb_string_g.bString[i * 2 + 1] = 0;
-    usb_string_g.bString[i * 2 + 2] = "0123456789ABCDEF"[b & 0x0F];
-    usb_string_g.bString[i * 2 + 3] = 0;
+  usb_string_g.bLength = 64 + 2;
+  unique_id_t uuid;
+  get_uuid(&uuid);
+  for (int i = 0; i < 16; i++) {
+    uint8_t b = uuid.bytes[15 - i]; // inverse order is the canonical order as used in the lis backend
+    usb_string_g.bString[i * 4 + 0] = "0123456789ABCDEF"[b >> 4 & 0x0F];
+    usb_string_g.bString[i * 4 + 1] = 0;
+    usb_string_g.bString[i * 4 + 2] = "0123456789ABCDEF"[b & 0x0F];
+    usb_string_g.bString[i * 4 + 3] = 0;
   }
   udc_control_send((uint32_t*)&usb_string_g, len);
 }

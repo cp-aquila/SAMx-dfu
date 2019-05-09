@@ -85,6 +85,21 @@ void delay_8_cycles(uint32_t cy)
   return;
 }
 
+void get_uuid(unique_id_t* unique_id)
+{
+#ifdef __SAME54N19A__
+  uint32_t* word_0_ptr = (uint32_t*)  0x008061FC;
+  uint32_t* word_123_ptr = (uint32_t*) 0x00806010;
+#else
+  uint32_t* word_0_ptr = (uint32_t*) 0x0080A00C;
+  uint32_t* word_123_ptr = (uint32_t*) 0x0080A040;
+#endif
+  unique_id->words[0] = *word_0_ptr;
+  unique_id->words[1] = *word_123_ptr++;
+  unique_id->words[2] = *word_123_ptr++;
+  unique_id->words[3] = *word_123_ptr;
+}
+
 
 void jump_to_flash(uint32_t addr_p, uint32_t r0_val)
 {

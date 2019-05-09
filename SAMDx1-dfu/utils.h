@@ -48,17 +48,10 @@ typedef struct Pin {
   uint8_t chan;
 } Pin;
 
-typedef struct __attribute__((packed))
-{
-  uint16_t mib_revision;
-  uint8_t  ieee_address[8];
-  char     board_serial[10];
-  char     atmel_part_number[8];
-  uint8_t  pcba_rev;
-  uint8_t  xtal_trim;
-  uint16_t crc;
-}
-ee_data_t;
+typedef union {
+  uint8_t bytes[16];
+  uint32_t words[4];
+} unique_id_t;
 
 /*- Prototypes -------------------------------------------------------------*/
 void pin_mux(Pin p);
@@ -71,6 +64,7 @@ void pin_pull_up(Pin p);
 bool pin_read(Pin p);
 
 void delay_8_cycles(uint32_t cy);
+void get_uuid(unique_id_t* unique_id);
 
 // __SAME54N19A__
 // the Device runs with 48Mhz after power-up (see section 7.3.2)
