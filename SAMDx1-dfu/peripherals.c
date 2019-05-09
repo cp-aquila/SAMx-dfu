@@ -24,9 +24,6 @@ static inline uint8_t spi_transfer_byte(Sercom* module, uint8_t mosi)
 #ifndef __SAME54N19A__
 
 static uint8_t mcp23008_gpio_val;
-
-#define I2C_ADDR_MCP23008 (32)
-#define I2C_BAUD_VAL 59 // 48Mhz to 400kHz
 #define MCP23008_REG_IODIR   0x00
 #define MCP23008_REG_GPIO    0x09
 
@@ -58,6 +55,28 @@ static inline void i2c_master_wait_for_sync()
 {
   while (I2C_SERCOM_MODULE->I2CM.SYNCBUSY.reg & SERCOM_I2CM_SYNCBUSY_MASK) {
   }
+}
+
+bool i2c_scan_addr(uint8_t addr)
+{
+  bool slave_detected = false;
+  // Set action to ACK
+  i2c_master_wait_for_sync();
+  I2C_SERCOM_MODULE->I2CM.CTRLB.reg &= ~SERCOM_I2CM_CTRLB_ACKACT;
+
+  i2c_master_wait_for_sync();
+  I2C_SERCOM_MODULE->I2CM.ADDR.reg = addr;
+  i2c_master_wait_for_bus();
+
+  // check if slave is on bus
+  if (I2C_SERCOM_MODULE->I2CM.STATUS.bit.RXNACK == false) {
+    slave_detected = true;
+  }
+  // send stop
+  i2c_master_wait_for_sync();
+  I2C_SERCOM_MODULE->I2CM.CTRLB.reg |= SERCOM_I2CM_CTRLB_CMD(3);
+
+  return slave_detected;
 }
 
 static void i2c_mcp_data(uint8_t reg, uint8_t data)

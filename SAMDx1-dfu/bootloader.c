@@ -428,18 +428,33 @@ bootloader_startup:
 #ifdef __SAME54N19A__
   apa102_led_setup();
 #else
+  // startup i2c
+  i2c_setup();
+
   // setup spi flash
   spi_flash_setup();
   if (spi_flash_check() == true) {
     // TODO: read external flash, check signature/checksum
     // when okay, write external to internal flash
-    uint8_t buf[32];
-    spi_flash_read(0, buf, sizeof(buf));
+    // uint8_t buf[32];
+    // spi_flash_read(0, buf, sizeof(buf));
   }
 
-  // startup i2c
-  i2c_setup();
 #endif
+
+// detect hardware and change USB IDs accordingly
+#ifdef __SAME54N19A__
+  usb_device_descriptor.idProduct = 0xED9E;
+#else
+  if (i2c_scan_addr(I2C_ADDR_MS5525 << 1) == true) {
+    // pressure sensor present, that means we are a drive
+    usb_device_descriptor.idProduct = 0xF024;
+  } else {
+    // nope, so we are a coordinator
+    usb_device_descriptor.idProduct = 0xF025;
+  }
+#endif
+
 
   //  initialize USB
   pin_mux(PIN_USB_DP);

@@ -43,8 +43,8 @@ usb_device_descriptor_t usb_device_descriptor __attribute__((aligned(4))) =   /*
   .bDeviceProtocol        = 0,
 
   .bMaxPacketSize0        = 64,
-  .idVendor               = 0x1209,
-  .idProduct              = 0x7556,
+  .idVendor               = 0x04D8, // Microchip
+  .idProduct              = 0xED9E, // BioR-Gateway, received from microchip USB-sub-licensing
   .bcdDevice              = DFU_VERSION,
 
   .iManufacturer          = USB_STRING_MANU,

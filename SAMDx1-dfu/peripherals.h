@@ -44,6 +44,9 @@ const static Pin PIN_FLASH_CS   = {.group = 1, .pin = 2,  .mux = 0 };
 #else
 
 #define I2C_SERCOM_MODULE     SERCOM1
+#define I2C_ADDR_MCP23008     (32)
+#define I2C_ADDR_MS5525       (118)  // 111 0110 (CSB on 3V)
+#define I2C_BAUD_VAL           59 // 48Mhz to 400kHz
 
 #define FLASH_SERCOM_MODULE   SERCOM5
 #define FLASH_SERCOM_DIPO     (2)
@@ -53,6 +56,7 @@ const static Pin PIN_FLASH_CS   = {.group = 1, .pin = 2,  .mux = 0 };
 
 void i2c_led_toggle(void);
 void i2c_setup(void);
+bool i2c_scan_addr(uint8_t addr);
 
 void apa102_led_toggle(void);
 void apa102_led_setup(void);
