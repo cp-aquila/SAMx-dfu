@@ -378,14 +378,41 @@ static bool wdt_reset_entry_condition(void)
 #endif
 }
 
+static bool crc_entry_condition(void)
+{
+#ifdef __SAME54N19A__
+
+#else
+  // clear DSU
+  PAC1->WPCLR.reg = 2;
+
+  // start CRC check at beginning of user app
+  DSU->ADDR.reg = FLASH_BOOT_SIZE;
+  // use length encoded into unused vector address in user app
+  // 0x10 is a magic offset thats also used in 'bin2dfu.c'
+  DSU->LENGTH.reg = *(volatile uint32_t*)(FLASH_BOOT_SIZE + 0x10);
+
+  // ask DSU to compute CRC, wait till its done
+  DSU->DATA.reg = 0xFFFFFFFF;
+  DSU->CTRL.bit.CRC = 1;
+  while (!DSU->STATUSA.bit.DONE);
+
+  if (DSU->DATA.reg != 0)  {
+    return true;
+  }
+#endif
+  return false;
+}
+
+
 void bootloader(void)
 {
-  if (wdt_reset_entry_condition() || !flash_valid() || usb_dongle_present()) {
-    goto run_bootloader;
+  if (wdt_reset_entry_condition() || crc_entry_condition() || !flash_valid() || usb_dongle_present()) {
+    goto bootloader_startup;
   }
   jump_to_flash(FLASH_FW_ADDR, 0);
 
-run_bootloader:
+bootloader_startup:
   // configure NVM to automatically commit the page buffer
 #ifdef __SAME54N19A__
   NVMCTRL->CTRLA.bit.WMODE = NVMCTRL_CTRLA_WMODE_AQW_Val;
